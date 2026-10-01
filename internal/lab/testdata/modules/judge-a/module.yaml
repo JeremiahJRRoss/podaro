@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: judge-a, version: "1.0", title: Fixture module judge-a }
+image: { repository: docker.io/library/nginx, tag: "1.27", digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa }
+readiness: { probe: { port: 80 }, typical: 5s, budget: 30s }
+endpoints: [ { purpose: ui, port: 80 } ]
+embed: iframe
+resources: { cpu: 500m, memory: 128MiB }
+secrets:
+  broker: { kind: token, description: fixture broker token }
+adapters:
+  - { name: kafka-lag, exec: { image: ghcr.io/acme/kafka-lag@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, secrets: [broker] } }
+generators:
+  - { name: kafka-orders, exec: { image: ghcr.io/acme/kafka-orders@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc } }

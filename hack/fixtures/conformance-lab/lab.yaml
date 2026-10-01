@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/lab/v1alpha2.json
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The conformance lab (the reconciliation plan's R1): every built-in
+# adapter and generator that the platform keeps, exercised once on
+# vendor-neutral services — `http`, `container`, `attest` and `exec`
+# checkpoints, a baseline and objectives of each kind; the `http-requests`
+# and `web-logs` generators delivered to a sink; a secret rendered into a
+# service's environment and revealed by a step; a soft-gated playbook
+# whose seeds are step actions and whose last step references a
+# template checkpoint. hack/conformance_lab.sh walks it: create → verify
+# → the playbook → reset → the leak scan → destroy.
+#
+# `web` is nginx 1.28.0 (the hello-nginx fixture's digest) and runs on
+# either runtime; `sink` is the fake runtime's `example/ndjson-sink`
+# (internal/runtime/fake_sink.go) and the exec judge is the Spec 0002
+# conformance fixture, so the lab as a whole runs on the fake runtime.
+apiVersion: lab.podaro.dev/v1alpha2
+kind: Template
+metadata:
+  name: conformance-lab
+  version: 0.1.0
+  title: Conformance lab (runtime fixture)
+  description: >
+    Every built-in, once, on services that belong to no vendor — the
+    platform proven by itself.
+secrets:
+  admin:
+    kind: password
+    description: The sink's admin login — rendered into its environment, revealed by a step, never printed
+services:
+  web:
+    image: docker.io/library/nginx@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609
+    endpoints: [ { purpose: ui, port: 80 } ]
+    embed: iframe
+    readiness: { probe: { port: 80, path: /, expect_status: 200 }, typical: 5s, budget: 1m }
+    resources: { cpu: 250m, memory: 64MiB }
+  sink:
+    image: docker.io/example/ndjson-sink@sha256:5555555555555555555555555555555555555555555555555555555555555555
+    env: { SINK_ADMIN_PASSWORD: "${secret:admin}" }
+    endpoints: [ { purpose: api, port: 8080 } ]
+    embed: api-only
+    readiness: { probe: { port: 8080, path: /, expect_status: 200 }, typical: 1s, budget: 1m }
+    resources: { cpu: 250m, memory: 64MiB }
+seeds:
+  knock:
+    generator: http-requests
+    count: 50
+    params: { service: sink, path: /ping }
+  events:
+    generator: web-logs
+    count: 120
+    params: { service: sink, purpose: api, path: /ingest, batch: 40 }
+checkpoints:
+  - id: web-answers
+    adapter: http
+    params: { url: http://web:80/ }
+    expect: { status: 200 }
+  - id: web-running
+    adapter: container
+    params: { service: web }
+    expect: { state: running, healthy: true }
+  - id: judge-runs
+    adapter: exec
+    params:
+      image: docker.io/podaro/exec-conformance@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+      args: [pass]
+    retries: { attempts: 1 }
+profiles:
+  standard:
+    description: any host · fake runtime
+    resources:
+      web:  { cpu: 250m, memory: 64MiB }
+      sink: { cpu: 250m, memory: 64MiB }

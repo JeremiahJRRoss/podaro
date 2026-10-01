@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.podaro.dev/module/v1alpha2.json",
+  "$comment": "SPDX-License-Identifier: AGPL-3.0-only · Semantics: docs/specs/0003-template-module-v1alpha1.md (revised to v1alpha2) · v1alpha2 (2026-09-26): the retired adapters and generators removed; see spec 0001 §11 / spec 0003 §13 · FROZEN v1alpha2: additive changes only.",
+  "title": "Podaro Module (v1alpha2)",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "image"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "const": "lab.podaro.dev/v1alpha2" },
+    "kind": { "const": "Module" },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "../checkpoint/v1alpha2.json#/$defs/dnsLabel" },
+        "version": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9.-]*$",
+          "$comment": "The version templates reference: use: modules/<name>@<version>. Tracks the product line (e.g. 8.17), not the image patch."
+        },
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "image": { "$ref": "#/$defs/image" },
+    "license": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "spdx": { "type": "string", "$comment": "License of the product itself, when open source." },
+        "eula": { "$ref": "#/$defs/eula" }
+      }
+    },
+    "secrets": { "$ref": "../lab/v1alpha2.json#/$defs/secretsMap" },
+    "config": { "$ref": "#/$defs/config" },
+    "init": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["image", "requests"],
+      "$comment": "One-shot init job, gated on readiness (legacy extraction §4 pattern) — declared as request metadata, never scripts.",
+      "properties": {
+        "image": { "$ref": "#/$defs/image" },
+        "waits_for": { "enum": ["healthy"], "default": "healthy" },
+        "requests": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/initRequest" }
+        }
+      }
+    },
+    "readiness": { "$ref": "#/$defs/readiness" },
+    "endpoints": { "type": "array", "items": { "$ref": "#/$defs/endpoint" }, "maxItems": 16 },
+    "embed": { "$ref": "#/$defs/embed" },
+    "resources": { "$ref": "#/$defs/resources" },
+    "requires": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sysctls": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z0-9._-]+$" },
+          "additionalProperties": { "type": ["integer", "string"] },
+          "$comment": "Host kernel requirements doctor can check per template (e.g. net.core.somaxconn)."
+        }
+      }
+    },
+    "adapters": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/alias" },
+      "$comment": "Adapter aliases (spec 0003 §10, the ADR-0002 deferred item, decided at G1): the module ships a friendly name resolving to an exec judge. Sugar only; resolved to adapter: exec at validate."
+    },
+    "generators": {
+      "type": "array",
+      "maxItems": 16,
+      "items": { "$ref": "#/$defs/alias" },
+      "$comment": "Generator aliases (spec 0003 §10): the seed-side twin of adapters."
+    }
+  },
+  "$defs": {
+    "image": {
+      "type": "object",
+      "required": ["repository", "tag", "digest"],
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string", "pattern": "^[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)+$" },
+        "tag": { "type": "string", "$comment": "Human-readable record of what the digest was resolved from. The engine pulls repository@digest; the tag is never trusted at runtime." },
+        "digest": { "type": "string", "pattern": "^sha256:[a-f0-9]{64}$" }
+      }
+    },
+    "eula": {
+      "type": "object",
+      "required": ["id", "url"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "../checkpoint/v1alpha2.json#/$defs/dnsLabel" },
+        "name": { "type": "string", "maxLength": 120 },
+        "url": { "type": "string", "format": "uri" },
+        "env": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "$comment": "Environment the engine injects ONLY after the operator's recorded acceptance (API §6.2). Acceptance mechanics live here so they can never be defaulted."
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "additionalProperties": false,
+      "$comment": "Rendered engine-side at create. String values may reference per-instance secrets as ${secret:<name>} — references, never values; resolution never appears in logs or evidence.",
+      "properties": {
+        "env": { "type": "object", "additionalProperties": { "type": "string" } },
+        "command": { "type": "array", "items": { "type": "string" }, "maxItems": 32 },
+        "args": { "type": "array", "items": { "type": "string" }, "maxItems": 32 },
+        "files": {
+          "type": "array",
+          "maxItems": 16,
+          "items": {
+            "type": "object",
+            "required": ["path"],
+            "anyOf": [{ "required": ["content"] }, { "required": ["source"] }],
+            "$comment": "A file's text is written inline (content) or read from a template asset (source, a path relative to the template directory — spec 0003 §9, added at plan S8). Declaring both is a composition error at validate, where the message can say why.",
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string", "pattern": "^/" },
+              "mode": { "type": "string", "pattern": "^0[0-7]{3}$", "default": "0644" },
+              "content": { "type": "string" },
+              "source": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      }
+    },
+    "initRequest": {
+      "type": "object",
+      "required": ["method", "path"],
+      "additionalProperties": false,
+      "properties": {
+        "service": { "$ref": "../checkpoint/v1alpha2.json#/$defs/dnsLabel", "$comment": "Target service name; defaults to the module's own service." },
+        "method": { "enum": ["GET", "POST", "PUT", "DELETE"] },
+        "scheme": { "enum": ["http", "https"], "default": "http" },
+        "port": { "$ref": "#/$defs/port" },
+        "path": { "type": "string", "pattern": "^/" },
+        "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+        "body": { "type": ["object", "string"], "$comment": "JSON object or literal string; string values may carry ${secret:<name>} references." },
+        "auth": {
+          "type": "object",
+          "required": ["secret"],
+          "additionalProperties": false,
+          "properties": {
+            "secret": { "$ref": "../checkpoint/v1alpha2.json#/$defs/dnsLabel" },
+            "username": { "type": "string" }
+          }
+        },
+        "until": {
+          "type": "object",
+          "additionalProperties": false,
+          "$comment": "Poll semantics: repeat until the expected status, within retries.",
+          "properties": { "status": { "type": "integer", "minimum": 100, "maximum": 599 } }
+        },
+        "retries": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "attempts": { "type": "integer", "minimum": 1, "maximum": 60, "default": 10 },
+            "backoff": { "$ref": "../checkpoint/v1alpha2.json#/$defs/duration", "default": "5s" }
+          }
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["probe"],
+      "properties": {
+        "probe": {
+          "type": "object",
+          "required": ["port"],
+          "additionalProperties": false,
+          "properties": {
+            "scheme": { "enum": ["http", "https"], "default": "http" },
+            "port": { "$ref": "#/$defs/port" },
+            "path": { "type": "string", "pattern": "^/", "default": "/" },
+            "expect_status": { "type": "integer", "minimum": 100, "maximum": 599, "default": 200 }
+          }
+        },
+        "typical": { "$ref": "../checkpoint/v1alpha2.json#/$defs/duration", "$comment": "What the ladder narrates: 'typically 5–8 min' comes from here." },
+        "budget": { "$ref": "../checkpoint/v1alpha2.json#/$defs/duration", "$comment": "The start budget (legacy start_period); exceeding it is a failure, not patience." },
+        "interval": { "$ref": "../checkpoint/v1alpha2.json#/$defs/duration", "default": "5s" }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "required": ["purpose", "port"],
+      "additionalProperties": false,
+      "properties": {
+        "purpose": { "$ref": "../checkpoint/v1alpha2.json#/$defs/dnsLabel", "$comment": "ui · api · hec · dist · syslog · http-in … — what Spec 0002 hands to extensions." },
+        "port": { "$ref": "#/$defs/port" },
+        "scheme": { "enum": ["http", "https", "tcp"], "default": "http" },
+        "path": { "type": "string", "pattern": "^/" }
+      }
+    },
+    "embed": {
+      "enum": ["iframe", "newtab", "api-only"],
+      "$comment": "Console tab capability (API §6): iframe = embedded tab; newtab = Open ↗ card; api-only = no tab."
+    },
+    "resources": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cpu": { "type": "string", "pattern": "^[0-9]+m$|^[0-9]+(\\.[0-9]+)?$" },
+        "memory": { "type": "string", "pattern": "^[0-9]+(MiB|GiB)$" }
+      }
+    },
+    "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+    "alias": {
+      "type": "object",
+      "required": ["name", "exec"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "../checkpoint/v1alpha2.json#/$defs/dnsLabel",
+          "$comment": "Must not collide with the built-in adapter/generator registries or another composed module's aliases; enforced by validate."
+        },
+        "exec": { "$ref": "../lab/v1alpha2.json#/$defs/execSpec" }
+      }
+    }
+  }
+}

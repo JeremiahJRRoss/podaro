@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The identity guard's detectors, as hashes (the reconciliation plan's D-R17): what hack/identity_guard.py
+# searches for, in any letter case, in a tree that carries no residual-identity ledger — the published
+# snapshot, where CI's `identity` job judges the tree, every architecture's release, the CLI's output and the
+# rendered console against an empty ledger. A hash is not a spelling: this file names no former identity.
+# Each line: a detector's fold — each code point of the case-folded detector, modulo 4, one digit each, the
+# prefilter the guard finds first — and the SHA-256 of "podaro-identity-detector:" and the case-folded
+# detector, which decides. Written by `python3 hack/identity_guard.py --write-hashes` from the ledger's
+# Detectors line; where the ledger is in the tree, the guard fails when this file is not that line, hashed.
+013133 314a9f1bd6cb6374640e6695197b958b409bc46d6870aa122ce378ff59cdb10a
+013133011 894c0f5671ddc73b83f98a12591d287a32f48af76aeea5196f0f0fbb7bb20bb9
+01313311 bde3a7ea11df6476b7098761f550cd959ce920101755fc29dde14787575e8cf4
+013133111 c8b89c1629297c15663a72a82d7fc9c183562ebdacd47d756fac9c246aa3bf47
+013133211 4c1bf6455396e651a508f7809903d8a0bb0a50afbe2ee0bb62ae892859f3adb8
+013133311 0795f3055c04dbaa341d73d3010bdc4aa17932b689f7c4e5b512631f796187e8

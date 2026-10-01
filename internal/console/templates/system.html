@@ -1,0 +1,8 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "system"}}<dl class="facts mono">
+  <dt>engine</dt><dd>v{{.Engine.Version}} · api {{.Engine.APIVersion}}{{if .Runtime}} · runtime {{.Runtime}}{{end}}</dd>
+  {{if .Host.PodmanVersion}}<dt>podman</dt><dd>{{.Host.PodmanVersion}}{{if .Host.Rootless}}{{if deref .Host.Rootless}} · rootless{{else}} · rootful{{end}}{{end}}</dd>{{end}}
+  <dt>gateway</dt><dd>{{if .Host.Gateway.Listening}}listening on {{.Host.Gateway.Address}} (TLS) · {{.Host.Gateway.Domain}} · {{.Host.Gateway.Certificate}}{{else}}not listening — podaro setup{{end}}</dd>
+  <dt>observability export</dt><dd>logs {{.Host.Observability.Logs}} · metrics {{.Host.Observability.Metrics}} · traces {{.Host.Observability.Traces}}</dd>
+</dl>
+{{end}}

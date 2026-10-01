@@ -1,0 +1,11 @@
+<span class="revealed" x-data="reveal" data-remask="30">
+  <code class="value mono" data-value>correct-horse-battery-staple</code>
+  <button class="button copy" type="button" x-on:click="copy" aria-label="copy beta-admin">Copy</button>
+  <span class="muted countdown mono" role="timer" aria-live="off">re-masks in <span x-text="left">30</span>s</span>
+  <span class="masked" hidden aria-hidden="true">●●●●●●</span>
+  <button class="button reveal" type="button" hidden
+    hx-post="/api/v1alpha1/instances/pii-lab/secrets/beta-admin/reveal"
+    hx-headers='{"X-Podaro-CSRF":""}'
+    hx-target="closest .revealed" hx-swap="outerHTML"
+    aria-label="reveal beta-admin">Reveal</button>
+</span>

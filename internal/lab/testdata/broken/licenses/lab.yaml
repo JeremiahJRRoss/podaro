@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  gated:
+    image: docker.io/example/terms-gated@sha256:9999999999999999999999999999999999999999999999999999999999999999
+    eula: { id: example-terms, name: Example Terms, url: https://example.com/terms }

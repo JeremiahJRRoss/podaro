@@ -1,0 +1,22 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "playbooks"}}<ul class="playbooks">
+{{range .Rows}}  <li class="playbook">
+    <h3>{{.Title}}</h3>
+{{if .Description}}    <p class="muted">{{.Description}}</p>
+{{end}}    <p class="mono muted">{{.Steps}} steps · {{.Objectives}} objectives · {{join .Modes}} · gating {{.Gating}}</p>
+{{/* One link per manner the playbook declares, and the Open link is
+         Guided — so it is rendered only when Guided is declared. Making
+         HRef conditional without this left a repro-only row with
+         `href=""`, which htmx would have fetched as the current page
+         into the rail: a wrong answer traded for a broken one
+         (self-review of the round-5 fix). A row with no manner this
+         console opens still says what the playbook is. */}}    <p class="playbook-actions">
+{{if .HRef}}      <a class="button primary" href="{{.HRef}}" hx-get="{{.HRef}}" hx-target="#rail" hx-swap="innerHTML">Open</a>
+{{end}}{{if .PresenterHRef}}      <a class="button" href="{{.PresenterHRef}}" hx-get="{{.PresenterHRef}}" hx-target="#rail" hx-swap="innerHTML">Presenter</a>
+{{end}}{{if .AuthorHRef}}      <a class="button" href="{{.AuthorHRef}}" hx-get="{{.AuthorHRef}}" hx-target="#rail" hx-swap="innerHTML">Author preview</a>
+{{end}}{{if not .HRef}}{{if not .PresenterHRef}}{{if not .AuthorHRef}}      <span class="muted">{{join .Modes}} — no manner this console opens; the CLI runs it</span>
+{{end}}{{end}}{{end}}    </p>
+  </li>
+{{end}}{{if not .Rows}}  <li class="muted empty">This lab ships no playbook.</li>
+{{end}}</ul>
+{{end}}

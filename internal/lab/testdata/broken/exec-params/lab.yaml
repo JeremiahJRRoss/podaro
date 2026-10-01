@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  web:
+    image: docker.io/library/nginx@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609
+checkpoints:
+  - id: judged
+    adapter: exec
+    params:
+      image: docker.io/acme/judge@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      arg: [pass]

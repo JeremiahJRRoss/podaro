@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.podaro.dev/checkpoint/v1alpha2.json",
+  "$comment": "SPDX-License-Identifier: AGPL-3.0-only · Semantics: docs/specs/0001-playbook-checkpoint-v1alpha1.md (revised to v1alpha2) · v1alpha2 (2026-09-26): the retired adapters and generators removed; see spec 0001 §11 / spec 0003 §13 · FROZEN v1alpha2: additive changes only.",
+  "title": "Podaro Checkpoint (v1alpha2)",
+  "type": "object",
+  "required": [
+    "id",
+    "adapter"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "$ref": "#/$defs/dnsLabel"
+    },
+    "class": {
+      "enum": [
+        "baseline",
+        "objective"
+      ],
+      "$comment": "Default by location: template-level → baseline, step-inline → objective."
+    },
+    "adapter": {
+      "anyOf": [
+        {
+          "enum": [
+            "http",
+            "container",
+            "attest",
+            "exec"
+          ]
+        },
+        {
+          "$ref": "#/$defs/dnsLabel",
+          "$comment": "A module-declared adapter alias (spec 0003 §10): resolved to adapter: exec at validate; a name matching neither the registry nor a composed module's alias fails validation. Widened additively 2026-08-10."
+        }
+      ],
+      "$comment": "Built-in registry plus 'exec' — the open extension point (ADR-0002, Spec 0002; added additively 2026-08-09) — plus module alias names (spec 0003 §10; added additively 2026-08-10)."
+    },
+    "params": {
+      "type": "object",
+      "$comment": "Adapter-specific; contracts in spec §3. Never contains secret values."
+    },
+    "expect": {
+      "type": "object",
+      "$comment": "Adapter-specific assertion; may assert failure states (repro pattern)."
+    },
+    "timeout": {
+      "$ref": "#/$defs/duration",
+      "default": "30s"
+    },
+    "retries": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "attempts": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "default": 3
+        },
+        "backoff": {
+          "$ref": "#/$defs/duration",
+          "default": "5s"
+        }
+      }
+    },
+    "severity": {
+      "enum": [
+        "gate",
+        "warn",
+        "info"
+      ],
+      "default": "gate"
+    },
+    "hint": {
+      "type": "string",
+      "minLength": 1,
+      "$comment": "Required when class resolves to objective (spec §2); enforced semantically by validate."
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capture": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 16
+        }
+      }
+    }
+  },
+  "$defs": {
+    "dnsLabel": {
+      "type": "string",
+      "pattern": "^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$"
+    },
+    "duration": {
+      "type": "string",
+      "pattern": "^[0-9]+(ms|s|m|h)$"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "adapter": {
+            "const": "exec"
+          }
+        },
+        "required": [
+          "adapter"
+        ]
+      },
+      "then": {
+        "required": [
+          "params"
+        ],
+        "properties": {
+          "params": {
+            "type": "object",
+            "required": [
+              "image"
+            ],
+            "properties": {
+              "image": {
+                "type": "string",
+                "pattern": "@sha256:[a-f0-9]{64}$",
+                "$comment": "Digest-pinned OCI image; tags refused."
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 32
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "secrets": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/dnsLabel"
+                },
+                "maxItems": 8,
+                "$comment": "Declared grants only; mounted as files per Spec 0002 §2."
+              },
+              "limits": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "cpu": {
+                    "type": "string"
+                  },
+                  "memory": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

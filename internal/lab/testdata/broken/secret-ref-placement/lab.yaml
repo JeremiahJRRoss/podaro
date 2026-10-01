@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  grafana: { use: modules/grafana@12.4 }
+seeds:
+  logs:
+    generator: { exec: { image: docker.io/acme/gen@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa } }
+    count: 10
+    params: { token: "${secret:grafana}" }
+checkpoints:
+  - id: grafana-up
+    adapter: http
+    params: { url: http://grafana:3000, headers: { Authorization: "${secret:grafana}" } }
+    expect: { status: 200 }

@@ -1,0 +1,74 @@
+<section class="rail" aria-label="playbook" data-mode="guided"
+  data-instance="pii-lab" data-playbook="pii-redaction" data-csrf="csrf-token" data-progress="{&#34;current_step&#34;:&#34;&#34;,&#34;steps&#34;:{}}">
+  
+  <button class="rail-spine" type="button" data-rail-toggle
+    ><span class="sr-only spine-action">Open the playbook rail. </span
+    ><span class="spine-dots"><span class="spine-dot status-idle"><span class="spine-glyph" aria-hidden="true">○</span><span class="sr-only spine-word">Step 1 of 3: not verified yet. </span></span><span class="spine-dot status-idle"><span class="spine-glyph" aria-hidden="true">○</span><span class="sr-only spine-word">Step 2 of 3: not verified yet. </span></span><span class="spine-dot status-idle"><span class="spine-glyph" aria-hidden="true">○</span><span class="sr-only spine-word">Step 3 of 3: not verified yet. </span></span></span
+    ><span class="spine-title">Step 1 of 3 · Send events with PII</span></button>
+  <header class="rail-head">
+    <p class="eyebrow">Playbook · guided</p>
+    <h2 class="rail-title">PII Redaction</h2>
+    <p class="muted rail-sub"><span class="mono">3</span> steps · <span class="mono">2</span> objectives</p>
+  </header>
+  <ol class="steps">
+    <li class="step status-idle" id="step-send-events" data-step="send-events" data-context="beta">
+      <p class="step-position mono">Step 1 of 3 · beta</p>
+      <h3 class="step-title">Send events with PII</h3>
+      <div class="step-body"><p>Send a batch of web-server events. Some carry a social security number in _raw.</p>
+</div>
+      <div class="actions">
+        <button class="button primary seed-button" type="button"
+          data-actions="seed:events" data-instance="pii-lab" data-csrf="csrf-token"
+          data-running-label="Sending…"
+          title="safe to run again">Send events · 500 events, 40% with PII</button>
+        <div class="action-output" aria-live="polite"></div>
+      </div>
+    </li>
+    <li class="step status-idle" id="step-mask-them" data-step="mask-them" data-checkpoint="no-ssn-in-index" data-context="beta">
+      <p class="step-position mono">Step 2 of 3 · beta</p>
+      <h3 class="step-title">Mask the numbers</h3>
+      <div class="step-body"><p>Add a Mask function to the pipeline so ssn=… becomes pii-redacted.</p>
+</div>
+      <div class="actions">
+        <button class="button" type="button"
+          hx-post="/api/v1alpha1/instances/pii-lab/secrets/beta-admin/reveal"
+          hx-headers='{"X-Podaro-CSRF":"csrf-token"}'
+          hx-target="this" hx-swap="outerHTML">Reveal beta credentials</button>
+        <div class="action-output" aria-live="polite"></div>
+      </div>
+      <div class="verify" id="verify-mask-them">
+        <button class="button verify-button" type="button"
+          hx-post="/api/v1alpha1/instances/pii-lab/checkpoints/no-ssn-in-index/run?step=mask-them&amp;playbook=pii-redaction"
+          hx-headers='{"X-Podaro-CSRF":"csrf-token"}'
+          hx-target="#result-mask-them" hx-swap="innerHTML"
+          hx-disabled-elt="this"
+          data-running-label="Verifying — running no-ssn-in-index…">Verify</button>
+        <div class="result-region" id="result-mask-them"><p class="result status-idle" role="status" aria-live="polite"><span class="glyph" aria-hidden="true">○</span> <span class="word mono">not verified yet</span></p>
+</div>
+      </div>
+      <details class="solution"><summary>Show me</summary><div><p>In the pipeline add Mask, matching ssn=\d{3}-\d{2}-\d{4}, replacing with pii-redacted.</p>
+</div></details>
+    </li>
+    <li class="step status-idle" id="step-confirm" data-step="confirm" data-checkpoint="routes-understood" data-context="overview">
+      <p class="step-position mono">Step 3 of 3 · overview</p>
+      <h3 class="step-title">Confirm the routes are understood</h3>
+      <div class="step-body"><p>Say in your own words where the events now go.</p>
+</div>
+      <div class="verify" id="verify-confirm">
+        <button class="button verify-button" type="button"
+          hx-post="/api/v1alpha1/instances/pii-lab/checkpoints/routes-understood/attest?step=confirm&amp;playbook=pii-redaction"
+          hx-headers='{"X-Podaro-CSRF":"csrf-token"}'
+          hx-target="#result-confirm" hx-swap="innerHTML"
+          hx-disabled-elt="this"
+          data-running-label="Recording your confirmation…">I confirm this</button>
+        <div class="result-region" id="result-confirm"><p class="result status-idle" role="status" aria-live="polite"><span class="glyph" aria-hidden="true">○</span> <span class="word mono">not verified yet</span></p>
+</div>
+      </div>
+    </li>
+  </ol>
+  
+  <nav class="step-nav-bar" aria-label="steps">
+    <button class="button step-nav" type="button" data-step-move="-1">← Previous</button>
+    <button class="button step-nav" type="button" data-step-move="1">Next step →</button>
+  </nav>
+</section>

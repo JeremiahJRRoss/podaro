@@ -1,0 +1,50 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{/* The result line itself. Its id lives on the wrapper in rail.html
+     rather than here, so an error envelope swapped into that wrapper
+     cannot take the Verify button's target with it (round 7). */}}
+{{define "result"}}<p class="result status-{{.Status}}" role="status" aria-live="polite">
+{{- if .Result}}<span class="glyph" aria-hidden="true">{{(.Glyph).Char}}</span> <span class="word mono">{{.Word}}</span>
+{{- if .Result.Duration}} <span class="muted mono">{{.Result.Duration}}</span>{{end}}
+{{- if .Result.Message}} <span class="receipt">{{.Result.Message}}</span>{{end}}
+{{- if .Result.Evidence}} <a class="evidence-link" href="{{.Result.Evidence}}">evidence</a>{{end}}
+{{- else}}<span class="glyph" aria-hidden="true">○</span> <span class="word mono">not verified yet</span>
+{{- end}}</p>
+{{- if .Hint}}
+<p class="hint" role="note">{{.Hint}}</p>
+{{- end}}
+{{- if .Light}}
+{{/* A Presenter re-check: the light lives in the step's title and the
+     quiet status line sits beside this result, both outside the region
+     this swaps, so both come along out of band. Without the light a
+     regressed checkpoint changed its result text and stayed green
+     (round 3); without the line it changed both and left a third
+     reading of the same checkpoint saying `· pass` between them (round
+     4). One verdict, one answer, every place it is shown. */}}
+<span id="light-{{.Step}}" hx-swap-oob="true" class="light light-{{.Light}}" aria-hidden="true">●</span>
+{{- if .Checkpoint}}
+<p id="quiet-{{.Step}}" hx-swap-oob="true" class="muted mono verify-quiet">{{.Checkpoint.ID}} · {{.Status}}</p>
+{{- end}}
+{{- end}}
+{{- range .Also}}
+{{/* A checkpoint lives on the template and a playbook's steps reference
+     it, so two steps can name the same one. One run produces one verdict
+     and it is the verdict of every step that names it — updating only
+     the step that asked left one rail showing two different answers for
+     the same checkpoint. */}}
+<div id="result-{{.}}" hx-swap-oob="innerHTML">{{template "resultbody" $}}</div>
+{{- end}}
+{{end}}
+
+{{/* The body of a result line, without the out-of-band swaps that would
+     recurse if a sibling carried them too. */}}
+{{define "resultbody"}}<p class="result status-{{.Status}}" role="status" aria-live="polite">
+{{- if .Result}}<span class="glyph" aria-hidden="true">{{(.Glyph).Char}}</span> <span class="word mono">{{.Word}}</span>
+{{- if .Result.Duration}} <span class="muted mono">{{.Result.Duration}}</span>{{end}}
+{{- if .Result.Message}} <span class="receipt">{{.Result.Message}}</span>{{end}}
+{{- if .Result.Evidence}} <a class="evidence-link" href="{{.Result.Evidence}}">evidence</a>{{end}}
+{{- else}}<span class="glyph" aria-hidden="true">○</span> <span class="word mono">not verified yet</span>
+{{- end}}</p>
+{{- if .Hint}}
+<p class="hint" role="note">{{.Hint}}</p>
+{{- end}}
+{{end}}

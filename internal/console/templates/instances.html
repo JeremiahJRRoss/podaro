@@ -1,0 +1,21 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "instances"}}{{if not .}}<section class="empty">
+  <p>No instances yet → <code>podaro up grafana-prometheus-intro</code></p>
+</section>
+{{else}}<table class="instances">
+  <thead><tr><th>instance</th><th>template</th><th>ladder</th><th>checkpoints</th></tr></thead>
+  <tbody>
+{{range .}}  <tr>
+    <td><a class="mono" href="{{.ConsoleURL}}">{{.Name}}</a>{{if eq .Mode "authoring"}} <span class="chip mono">authoring</span>{{end}}</td>
+    <td class="mono">{{.Template}}</td>
+    {{/* The word, not only the colour: on this page and the instance
+         headline there is no live region to carry it, and a bar read as
+         `●●●●●○○ seeded` is the same to a screen reader whether
+         the lab is climbing or has fallen (AGENTS.md: no unsupported promise in the documents, and UX §5 promises colour is never the only carrier).
+*/ -}}
+    <td class="mono"><span class="ladder-bar{{if .Ladder.Regressed}} regressed{{end}}">{{.Ladder.Condensed}}</span>{{if .Ladder.Regressed}}<span class="sr-only"> regressed,</span>{{end}} {{.Ladder.Label}}</td>
+    <td class="mono">baseline {{.Checkpoints.Baseline.Passed}}/{{.Checkpoints.Baseline.Total}} · objectives {{.Checkpoints.Objective.Passed}}/{{.Checkpoints.Objective.Total}}</td>
+  </tr>
+{{end}}  </tbody>
+</table>
+{{end}}{{end}}

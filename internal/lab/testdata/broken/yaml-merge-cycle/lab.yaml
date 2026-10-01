@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  web:
+    <<: &items [*items]
+    image: docker.io/library/nginx@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    endpoints: [ { purpose: ui, port: 80 } ]

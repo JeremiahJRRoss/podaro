@@ -1,0 +1,172 @@
+{
+  "plan": {
+    "template": {
+      "name": "conformance-lab",
+      "version": "0.1.0",
+      "title": "Conformance lab (runtime fixture)",
+      "path": "../../hack/fixtures/conformance-lab"
+    },
+    "profile": {
+      "name": "standard",
+      "description": "any host · fake runtime"
+    },
+    "services": [
+      {
+        "name": "sink",
+        "image": {
+          "repository": "docker.io/example/ndjson-sink",
+          "tag": "",
+          "digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+        },
+        "endpoints": [
+          {
+            "purpose": "api",
+            "port": 8080,
+            "scheme": "http"
+          }
+        ],
+        "embed": "api-only",
+        "resources": {
+          "cpu": "250m",
+          "memory": "64MiB"
+        },
+        "readiness": {
+          "typical": "1s",
+          "budget": "1m"
+        },
+        "env": [
+          "SINK_ADMIN_PASSWORD"
+        ]
+      },
+      {
+        "name": "web",
+        "image": {
+          "repository": "docker.io/library/nginx",
+          "tag": "",
+          "digest": "sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609"
+        },
+        "endpoints": [
+          {
+            "purpose": "ui",
+            "port": 80,
+            "scheme": "http"
+          }
+        ],
+        "embed": "iframe",
+        "resources": {
+          "cpu": "250m",
+          "memory": "64MiB"
+        },
+        "readiness": {
+          "typical": "5s",
+          "budget": "1m"
+        }
+      }
+    ],
+    "network": {
+      "scope": "instance",
+      "isolated": true,
+      "aliases": [
+        "sink",
+        "web"
+      ]
+    },
+    "volumes": [],
+    "secrets": [
+      {
+        "name": "admin",
+        "kind": "password",
+        "declared_by": [
+          "template"
+        ]
+      }
+    ],
+    "seeds": [
+      {
+        "name": "events",
+        "generator": "web-logs",
+        "kind": "built-in",
+        "count": 120,
+        "params": {
+          "batch": 40,
+          "path": "/ingest",
+          "purpose": "api",
+          "service": "sink"
+        }
+      },
+      {
+        "name": "knock",
+        "generator": "http-requests",
+        "kind": "built-in",
+        "count": 50,
+        "params": {
+          "path": "/ping",
+          "service": "sink"
+        }
+      }
+    ],
+    "checkpoints": {
+      "baseline": [
+        {
+          "id": "web-answers",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "web-running",
+          "adapter": "container",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "judge-runs",
+          "adapter": "exec",
+          "severity": "gate",
+          "source": "template"
+        }
+      ],
+      "objective": [
+        {
+          "id": "knocks-counted",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "playbook conformance · step knock"
+        },
+        {
+          "id": "events-held",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "playbook conformance · step deliver"
+        },
+        {
+          "id": "routes-understood",
+          "adapter": "attest",
+          "severity": "gate",
+          "source": "playbook conformance · step confirm"
+        }
+      ]
+    },
+    "playbooks": [
+      {
+        "name": "conformance",
+        "title": "Every built-in, once",
+        "steps": 4,
+        "objectives": 3,
+        "modes": [
+          "guided",
+          "presenter"
+        ]
+      }
+    ],
+    "licenses": [],
+    "exec": [
+      {
+        "where": "checkpoint judge-runs",
+        "image": "docker.io/podaro/exec-conformance@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        "secrets": []
+      }
+    ],
+    "warnings": []
+  }
+}

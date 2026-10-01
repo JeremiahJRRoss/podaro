@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/playbook/v1alpha2.json
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha2
+kind: Playbook
+metadata:
+  name: first-dashboard
+  title: "Your First Verified Dashboard"
+  description: >
+    Watch Prometheus observe the lab, drive real traffic through it, and
+    build a Grafana dashboard the system can prove exists. Small on
+    purpose: the point is that none of this is stack-specific.
+  modes: [guided, presenter]
+  gating: soft
+steps:
+  - id: meet-the-stack
+    title: Meet the stack
+    context: overview
+    duration: 2m
+    body: |
+      Two services, both real: **Prometheus** scraping itself and Grafana
+      every five seconds, and **Grafana** with the datasource already
+      provisioned. The baselines above went green when both targets
+      reported `up` — the lab proved itself before you touched it.
+
+      Everything you do next ends with the system, not this page, saying
+      whether it worked.
+    notes: |
+      Land the thesis: verified, not "probably fine". The baseline board
+      *is* the demo opener.
+
+  - id: drive-real-traffic
+    title: Drive real traffic
+    context: prometheus
+    duration: 3m
+    auto: true
+    body: |
+      Run the step: 200 query requests hit the Prometheus API. Then open
+      the graph view and query `prometheus_http_requests_total` — the
+      counter you just moved. That line is *your* traffic.
+    actions:
+      - seed: query-load
+    checkpoint:
+      id: traffic-observed
+      adapter: http
+      params: { url: "http://prometheus:9090/api/v1/query?query=sum(prometheus_http_requests_total{handler=\"/api/v1/query\"})" }
+      expect: { json_path: { path: "$.data.result[0].value[1]", op: gte, value: "200" } }
+      retries: { attempts: 4, backoff: 5s }
+      hint: >
+        The counter reads below 200? Give the scrape a beat — the interval
+        is 5s — then re-press the seed once; it is safe to repeat.
+
+  - id: build-a-dashboard
+    title: Build a dashboard the system can find
+    context: grafana
+    duration: 4m
+    body: |
+      Log into Grafana (reveal the credential below) and build a dashboard
+      titled exactly **Lab Overview**: one time-series panel of
+      `up`, one of `prometheus_http_requests_total`. Save it, then press
+      **Verify** — the checkpoint asks Grafana's API whether that
+      dashboard truly exists.
+    actions:
+      - reveal: grafana
+    checkpoint:
+      id: dashboard-exists
+      adapter: http
+      params: { url: "http://grafana:3000/api/search?query=Lab%20Overview" }
+      expect: { json_path: { path: "$[0].title", op: eq, value: Lab Overview } }
+      hint: >
+        Nothing found? Check the title is exactly "Lab Overview" and that
+        you pressed Save — an unsaved dashboard exists only in your
+        browser, and this lab only believes the system.
+    solution: |
+      Dashboards → New → Add visualization → datasource *Prometheus* →
+      query `up` → title the panel, add a second with
+      `prometheus_http_requests_total`, name the dashboard **Lab
+      Overview**, Save.
+
+  - id: leave-with-receipts
+    title: Leave with the receipts
+    context: overview
+    duration: 1m
+    body: |
+      Open **Evidence**: every green above is a timestamped query against
+      a live system. Download the report. Then break something on purpose
+      and press **Reset** — baselines re-verify, objectives clear, and you
+      just learned you cannot ruin this lab.
+    notes: |
+      Close on the report and the reset freedom — those two beats are the
+      product's whole argument in miniature.

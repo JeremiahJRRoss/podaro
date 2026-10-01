@@ -1,0 +1,58 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{/* The scoreboard keeps itself up to date, because it is the thing that
+     knows its filter: refreshed from the panel around it, the next event
+     put back the unfiltered board and threw away the chip the learner
+     chose. `audit` is among the triggers
+     and is not among the ladder's: the journal below shows reveals and
+     joins, and one made while the panel was open left it denying them
+     (round 5). */}}
+{{define "evidence"}}<section class="evidence" aria-label="evidence"
+  hx-get="/api/v1alpha1/instances/{{.Instance}}/checkpoints?filter={{.Filter}}"
+  hx-trigger="sse:checkpoint from:body, sse:job from:body, sse:audit from:body"
+  hx-target="this" hx-swap="outerHTML">
+  <nav class="chips" aria-label="filter">
+{{range chips .Filter}}    <a class="chip{{if .On}} on{{end}}" href="?filter={{.Value}}" hx-get="/api/v1alpha1/instances/{{$.Instance}}/checkpoints?filter={{.Value}}" hx-target="closest .evidence" hx-swap="outerHTML"{{if .On}} aria-current="true"{{end}}>{{.Label}}</a>
+{{end}}    <span class="spacer"></span>
+    <a class="button" href="/api/v1alpha1/instances/{{.Instance}}/evidence/report.junit.xml" download>Download report</a>
+  </nav>
+  <table class="scoreboard mono">
+    <thead><tr><th scope="col">status</th><th scope="col">checkpoint</th><th scope="col">expectation</th><th scope="col">took</th><th scope="col">at</th></tr></thead>
+    <tbody>
+{{range .Rows}}{{$s := status .Result}}      <tr class="status-{{(glyph $s).Class}}">
+        <td><span class="glyph" aria-hidden="true">{{(glyph $s).Char}}</span> <span class="word">{{word .Result}}</span></td>
+        <th scope="row">{{.ID}} <span class="muted">{{.Class}}</span></th>
+        <td class="expectation">{{expectation .}}</td>
+        <td class="muted">{{if .Result}}{{.Result.Duration}}{{end}}</td>
+        <td class="muted">{{if .Result}}{{rfc3339 .Result.At}}{{end}}</td>
+      </tr>
+{{end}}{{if not .Rows}}      <tr><td colspan="5" class="muted empty">No checkpoints match this filter.</td></tr>
+{{end}}    </tbody>
+  </table>
+  {{/* The journal is a second read, not a second column of this one: the
+       twin behind this table is …/checkpoints, which carries the latest
+       result of each checkpoint and nothing else. Rendering the journal
+       here would be a fragment showing what its JSON twin does not hold
+       (ADR-0003), which is why the section sat unfilled through S7 —
+       the only production caller left Entries nil.
+       It is fetched from the twin that does carry it. */}}
+  {{/* hx-target is explicit, not inherited. The scoreboard above sets
+       `hx-target="this"` for its own refresh, and htmx resolves an
+       inherited `this` to the element the attribute is *on* — so this
+       region's load landed in the scoreboard and replaced the chips and
+       the table with the journal. Caught by the browser walk before it
+       shipped; the fragment goldens could not see it, because each is
+       correct on its own. */}}
+  <div class="journal-region"
+    hx-get="/api/v1alpha1/instances/{{.Instance}}/evidence"
+    hx-trigger="load" hx-target="this" hx-swap="innerHTML"></div>
+</section>
+{{end}}
+
+{{/* The journal itself: the twin is GET …/evidence, whose JSON is
+     {"evidence": […]} — these entries, in evidence order. */}}
+{{define "journal"}}<h3 class="section">Journal</h3>
+{{if .Entries}}<ul class="journal mono">
+{{range .Entries}}  <li><span class="muted">{{rfc3339 .At}}</span> <span class="kind">{{.Type}}</span> {{summary .}}{{if .Authoring}} <span class="chip">authoring</span>{{end}}</li>
+{{end}}</ul>
+{{else}}<p class="muted empty">This instance has no journal entries yet.</p>
+{{end}}{{end}}

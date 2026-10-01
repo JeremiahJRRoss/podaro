@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# A module whose configuration reads a secret another module declares —
+# a dashboard that logs in to the store beside it. Composed without that
+# sibling, its reference resolves only if the template replaces the value
+# (TestOverrideReplacingSecretReferenceIsJudgedOnEffectiveConfig).
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: sibling-secret, version: "1.0", title: Fixture module reading a sibling's secret }
+image: { repository: docker.io/example/plain, tag: "1.0", digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb }
+readiness: { probe: { port: 8080 }, typical: 5s, budget: 30s }
+endpoints: [ { purpose: ui, port: 8080 } ]
+embed: iframe
+resources: { cpu: 250m, memory: 64MiB }
+config:
+  env:
+    STORE_HOSTS: http://store:9200
+    STORE_PASSWORD: ${secret:store-login}

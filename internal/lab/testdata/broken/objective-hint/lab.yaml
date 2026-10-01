@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+checkpoints:
+  - id: learner-did-it
+    class: objective
+    adapter: http
+    params: { url: http://prometheus:9090/api/v1/label/job/values }
+    expect: { body_contains: mine }

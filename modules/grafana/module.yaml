@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/module/v1alpha2.json
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha2
+kind: Module
+metadata:
+  name: grafana
+  version: "12.4"
+  title: Grafana
+  description: >
+    Grafana with embedding allowed and anonymous viewer access (labs are
+    permissive; the platform contains). Ships a provisioned Prometheus
+    datasource assuming the sibling service is named `prometheus`
+    (spec 0003 §9.3); override via config.
+image:
+  repository: docker.io/grafana/grafana
+  tag: 12.4.8
+  digest: sha256:7753ad493720e33560077e8bc5e05fbce4ade777f1387b19ab5050b6777111dd
+license:
+  spdx: AGPL-3.0-only
+secrets:
+  grafana:
+    kind: password
+    description: Grafana admin login
+config:
+  env:
+    GF_SECURITY_ADMIN_PASSWORD: ${secret:grafana}
+    GF_SECURITY_ALLOW_EMBEDDING: "true"
+    GF_AUTH_ANONYMOUS_ENABLED: "true"
+    GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+  files:
+    - path: /etc/grafana/provisioning/datasources/prometheus.yaml
+      content: |
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            type: prometheus
+            access: proxy
+            url: http://prometheus:9090
+            isDefault: true
+readiness:
+  probe:
+    port: 3000
+    path: /api/health
+  typical: 20s
+  budget: 1m
+endpoints:
+  - { purpose: ui, port: 3000, scheme: http }
+embed: iframe
+resources:
+  cpu: 500m
+  memory: 512MiB

@@ -1,0 +1,185 @@
+{
+  "$comment": "SPDX-License-Identifier: AGPL-3.0-only · The retirement manifest: what was retired before the release, on 2026-09-23 (CHANGELOG.md, \"Retired before the release\"). Every identifier is scoped to its registry role: a guard judges a match by file role, never as a substring ban across the repository. The image coordinates exist so a guard can recognise them; nothing here is a pull instruction. The binary embeds this file byte for byte (retirement.go) for the retired-name diagnostics, PDR-E106 and PDR-E107, and the catalog filter reuses it (`podaro.Retirement()`); the retirement guard (hack/retirement_guard.py) reads it.",
+  "version": 1,
+  "retired_on": "2026-09-23",
+  "authority": [
+    "CHANGELOG.md (v0.1.0, \"Retired before the release\")"
+  ],
+  "scenarios": [
+    {
+      "name": "o11y-stack-migration",
+      "path": "scenarios/o11y-stack-migration",
+      "catalog_path": "<state>/catalog/o11y-stack-migration",
+      "licenses": [
+        "splunk-general-terms",
+        "cribl-terms"
+      ],
+      "playbooks": [
+        "pii-redaction"
+      ],
+      "assets": [
+        "scenarios/o11y-stack-migration/assets/cribl-pack"
+      ]
+    }
+  ],
+  "modules": [
+    {
+      "name": "cribl-leader",
+      "version": "4.19",
+      "path": "modules/cribl-leader",
+      "use": "modules/cribl-leader@4.19",
+      "image": {
+        "repository": "docker.io/cribl/cribl",
+        "tag": "4.19.0",
+        "digest": "sha256:d60bfd6abb56451a261a68593236cf8b0355c0742c89f49ad2fcc817c40e5361"
+      }
+    },
+    {
+      "name": "cribl-worker",
+      "version": "4.19",
+      "path": "modules/cribl-worker",
+      "use": "modules/cribl-worker@4.19",
+      "image": {
+        "repository": "docker.io/cribl/cribl",
+        "tag": "4.19.0",
+        "digest": "sha256:d60bfd6abb56451a261a68593236cf8b0355c0742c89f49ad2fcc817c40e5361"
+      }
+    },
+    {
+      "name": "splunk",
+      "version": "9.4",
+      "path": "modules/splunk",
+      "use": "modules/splunk@9.4",
+      "image": {
+        "repository": "docker.io/splunk/splunk",
+        "tag": "9.4.14",
+        "digest": "sha256:1975e6d6a4550f930921c149a7a19cade3262373aeb236a37a134c5a437f78df"
+      }
+    },
+    {
+      "name": "elasticsearch",
+      "version": "8.17",
+      "path": "modules/elasticsearch",
+      "use": "modules/elasticsearch@8.17",
+      "image": {
+        "repository": "docker.io/elastic/elasticsearch",
+        "tag": "8.17.0",
+        "digest": "sha256:2f602552550869fb29b6fd5848c5118d3ef3a2e1d5d45802e3ab9088cb2de8e2"
+      }
+    },
+    {
+      "name": "kibana",
+      "version": "8.17",
+      "path": "modules/kibana",
+      "use": "modules/kibana@8.17",
+      "image": {
+        "repository": "docker.io/elastic/kibana",
+        "tag": "8.17.0",
+        "digest": "sha256:c773dc5a40b1739d7db6e559844ed45db08f15a25e0b66e00c176e3a1f6ace7e"
+      }
+    }
+  ],
+  "adapters": {
+    "product": [
+      "elastic-query",
+      "splunk-search",
+      "cribl-api"
+    ],
+    "composites_over_them": [
+      "count-parity",
+      "byte-reduction",
+      "negative-pattern"
+    ]
+  },
+  "generators": [
+    "pii-events",
+    "firewall-heavy"
+  ],
+  "fake_personalities": [
+    "elasticsearch",
+    "kibana",
+    "splunk",
+    "cribl-leader",
+    "cribl-worker"
+  ],
+  "scripts": [
+    "hack/golden_lab.sh"
+  ],
+  "code": {
+    "$comment": "Files that left with the lab, after what was reusable had been moved out of them (`deliver` from internal/seed/golden.go; `tlsProduct` from internal/runtime/fake_golden.go).",
+    "delete": [
+      "internal/runtime/fake_golden.go",
+      "internal/seed/golden.go",
+      "internal/verify/products.go",
+      "internal/verify/query.go",
+      "internal/verify/composite.go",
+      "internal/lab/testdata/golden/o11y-stack-migration.plan.json",
+      "internal/lab/testdata/golden/o11y-stack-migration.plan.txt"
+    ]
+  },
+  "records": {
+    "prompt_withdrawn": "docs/code-execution/D1-golden-lab-checkpoints.prompt.md",
+    "decision_superseded": "docs/reviews/0005-golden-lab-opt-in.md"
+  },
+  "allowed_locations": {
+    "$comment": "Where a retired identifier may still appear, by role — none may hold runnable provisioning content. The retirement guard checks the rule; the list grows only with a reason.",
+    "this_manifest": "hack/retirement.json",
+    "diagnostics": "internal/pdr/pdr.go (PDR-E106, E107, W103 and E215): their codes and explain text; the names they report are read from this manifest, embedded, and never spelled in compiled code — so pdr.go itself needs no allowance",
+    "frozen_schemas": [
+      "schemas/checkpoint.v1alpha1.json",
+      "schemas/module.v1alpha1.json",
+      "schemas/playbook.v1alpha1.json",
+      "schemas/template.v1alpha1.json"
+    ],
+    "negative_fixtures": [
+      "internal/lab/testdata/broken/retired-adapter/",
+      "hack/fixtures/retired-catalog/"
+    ],
+    "evidence_and_history": [
+      "CHANGELOG.md (a history note that names what was retired)"
+    ],
+    "protocol_reference": [
+      "internal/observe/",
+      "hack/observe_export.sh",
+      "internal/config/config_test.go (the HEC protocol's named origin)",
+      "public-docs/USERMANUAL.md §4 (the Authorization scheme the HEC protocol defines and the hec exporter sends)"
+    ],
+    "harness": [
+      "hack/retirement_allow.txt (its header quotes the search it answers; hack/retirement_scan.py, the binary scan and its self-test, spells nothing)"
+    ],
+    "narrative_name": [
+      "internal/console/ tests and goldens, internal/api/s9_round12_test.go (the retired playbook's name kept as a vendor-neutral narrative name in test data; test data only)"
+    ],
+    "$roles_comment": "harness and narrative_name are the categories hack/retirement_allow.txt uses beside the roles above: a detector has to spell what it detects, and a narrative name in test data names no product.",
+    "in_a_binary": {
+      "$comment": "What a built binary may carry a retired identifier in, in any letter case: the byte-identical embedded copies of the files the listed roles name — the frozen v1alpha1 schemas, which the engine still reads; and `this_manifest`, embedded (retirement.go) for the retired-name diagnostics — and the exact protocol strings below. Every file of a listed role must be embedded as the tree has it (a binary built from another tree fails as such, not as a leak), and each allowed file must carry exactly the names `carries` records, so content appended to a frozen schema fails. hack/retirement_scan.py reads this — the retirement guard imports it — and its self-test proves it.",
+      "roles": [
+        "frozen_schemas",
+        "this_manifest"
+      ],
+      "protocol_strings": [
+        {
+          "bytes": "Splunk ",
+          "reason": "the HTTP Event Collector protocol's Authorization scheme, which the hec exporter sends (internal/observe/sinks.go)"
+        }
+      ],
+      "carries": {
+        "schemas/checkpoint.v1alpha1.json": {
+          "splunk": 1,
+          "elastic-query": 1,
+          "splunk-search": 1,
+          "cribl-api": 1,
+          "count-parity": 1,
+          "byte-reduction": 1,
+          "negative-pattern": 1
+        },
+        "schemas/module.v1alpha1.json": {},
+        "schemas/playbook.v1alpha1.json": {},
+        "schemas/template.v1alpha1.json": {
+          "pii-events": 1,
+          "firewall-heavy": 1
+        }
+      }
+    }
+  }
+}

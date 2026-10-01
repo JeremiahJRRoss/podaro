@@ -1,0 +1,33 @@
+aliases@0.1.0 · Alias fixture
+  profile          none declared · module envelopes apply
+  services (2)
+    custom       inline · newtab
+      image      docker.io/library/nginx@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      endpoints  ui :80/http
+      eula       custom-terms · acceptance required at create
+    kafka        modules/judge-a@1.0 · iframe · cpu 500m · memory 128MiB · ready typically 5s (budget 30s)
+      image      docker.io/library/nginx@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      endpoints  ui :80/http
+  network          one isolated network per instance · aliases: custom · kafka
+  volumes          none declared · v1alpha2 modules keep state in container storage; destroy removes it
+  secrets (2)      broker (token), extra (uuid) · generated per instance, never printed
+  seeds (2)
+    exec-seed  exec (exec) · ghcr.io/acme/gen@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    orders     kafka-orders (alias) · count 5 · ghcr.io/acme/kafka-orders@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  checkpoints      baseline 3 · objectives 1
+    lag-ok       baseline · kafka-lag · gate · template
+    judge-exec   baseline · exec · gate · template
+    count-judge  baseline · exec · gate · template
+    c            objective · kafka-lag · gate · playbook p · step one
+  playbooks (1)
+    p  P · 1 step · 1 objective · guided, presenter, repro
+  licenses (1)
+    custom-terms  Custom Terms · https://example.com/terms · required by custom
+                  acceptance is explicit and recorded at create (API §6.2); never defaulted
+  exec images (6)
+    checkpoint c (alias kafka-lag from modules/judge-a)       ghcr.io/acme/kafka-lag@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb · secrets broker
+    checkpoint count-judge                                    ghcr.io/acme/count@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc · secrets extra
+    checkpoint judge-exec                                     ghcr.io/acme/judge@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb · secrets broker
+    checkpoint lag-ok (alias kafka-lag from modules/judge-a)  ghcr.io/acme/kafka-lag@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb · secrets broker
+    seed exec-seed                                            ghcr.io/acme/gen@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc · secrets broker, extra
+    seed orders (alias kafka-orders from modules/judge-a)     ghcr.io/acme/kafka-orders@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc · no secret grants

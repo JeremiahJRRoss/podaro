@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# A template's config.init.requests replaces the module's list whole
+# (spec 0003 §11 rule 2: arrays replace); the helper image stays the
+# module's. Read by instance_test.go through the test library.
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: init-merge, version: 1.0.0, title: Init merge fixture }
+services:
+  target:
+    use: modules/init-plain@1.0
+    config:
+      init:
+        requests:
+          - { method: GET, path: /, until: { status: 200 }, retries: { attempts: 3, backoff: 1s } }
+          - { method: PUT, path: /_setup/one, body: { a: 1 } }
+          - { method: PUT, path: /_setup/two, body: { b: 2 } }

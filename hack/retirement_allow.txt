@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The retired-name allowlist: where a name the retirement manifest (hack/retirement.json) records may still
+# stand in this tree, by the role of the file it is in.
+#
+# Every line the retired-name search returns must be accounted for here:
+#   git grep -n -i -E "<the manifest's scenario, modules, adapters, generators, playbooks, licence ids, assets and vendors>"
+# One row per path, or per path:line[,line…], then a tab, the category, a tab, and the reason. A whole-file row only
+# where one role covers the whole file: the manifest, the harness, or a history or evidence document. No row may
+# cover a location that holds runnable provisioning content. The categories are the manifest's allowed_locations
+# roles (this_manifest, frozen_schemas, negative_fixtures, evidence_and_history, protocol_reference, harness,
+# narrative_name).
+# hack/retirement_guard.sh (CI's `retirement` job) reads this file as its allowlist, over the same search plus the
+# retired image digests, every term taken from the manifest. It fails on a line no row accounts for; on a row that
+# matches nothing (removed, never kept in case); on a row that covers a maintained surface — the catalog, the
+# modules, the current schemas, the installer and its answers, the wrapper, the registries, what the binary embeds
+# or the release carries — save the embedded frozen files the manifest's in_a_binary roles name, under their role;
+# on a whole-file row the rule above does not allow; on a role the manifest names by path (this_manifest,
+# frozen_schemas, negative_fixtures) given to another path; and on a real digest in a negative fixture or a retired
+# one outside the manifest. Line numbers are this commit's; an edit that moves a line moves its row in the same
+# change.
+hack/retirement.json	this_manifest	the retirement manifest itself: it names what was retired so every guard and diagnostic can recognise it
+schemas/checkpoint.v1alpha1.json:29,30,31,32,33,34	frozen_schemas	the frozen v1alpha1 adapter enum, read by the engine (D-R2); a retired name in a document of this version fails PDR-E106
+schemas/template.v1alpha1.json:115	frozen_schemas	the frozen v1alpha1 generator registry comment (D-R2)
+internal/lab/testdata/broken/retired-adapter/lab.yaml:10,13	negative_fixtures	R2b's negative fixture: one retired module and one retired adapter, spelled as the manifest spells them, refused with PDR-E106; no image digest, no provisioning
+hack/fixtures/retired-catalog/o11y-stack-migration/lab.yaml:15,20,21,22,23,24,26,28,29,32,35,38,41	negative_fixtures	R3's negative fixture: the retired template as an earlier build left it in <state>/catalog/, its name, modules, adapters, a composite and generators spelled as the manifest spells them, for hack/retirement_migration_test.sh; no config, no init requests, no assets, its one image at an all-zero digest; it fails validation with PDR-E106 at every one
+hack/fixtures/retired-catalog/o11y-stack-migration/playbooks/pii-redaction.yaml:8	negative_fixtures	as above: its playbook, named as the retired playbook was; nothing in it runs
+hack/retirement_allow.txt	harness	this allowlist: its header quotes the search it answers
+internal/observe/sinks.go:7,296,298,336	protocol_reference	the hec exporter: the HTTP Event Collector protocol's origin and the Authorization scheme it defines (D-R5)
+internal/observe/observe_test.go:248,276,277,349,362	protocol_reference	the hec exporter's tests: the protocol's endpoint and Authorization header (D-R5)
+internal/config/config_test.go:70,92,104	protocol_reference	the hec exporter's configuration tests (D-R5; plan §7.1 "leave")
+hack/observe_export.sh:12,79,81,173,174	protocol_reference	the hec export test against a mock collector (D-R5)
+internal/console/s7_test.go:31,87,119,127,128,129,132,133,435,483,484,518,578,589,695,696,720,839,870,877	narrative_name	R1's vendor-neutral narrative name in test data: the retired playbook's name as a playbook id in console fixtures (plan §7.1 rename row); no product, no provisioning
+internal/console/s7_round6_test.go:63	narrative_name	as above
+internal/console/s7_round7_test.go:93,96,119,120	narrative_name	as above
+internal/console/s7_round9_test.go:19,27,28,33,53,69	narrative_name	as above
+internal/console/s7_round18_test.go:26	narrative_name	as above
+internal/console/s7_round26_test.go:51,52	narrative_name	as above
+internal/console/s7_round27_test.go:31,33	narrative_name	as above
+internal/console/s7_round29_test.go:35	narrative_name	as above
+internal/console/s7_round30_test.go:21,25,33	narrative_name	as above
+internal/console/testdata/labsurface.html:13,14	narrative_name	as above (a fragment golden)
+internal/console/testdata/playbooks.html:7,8	narrative_name	as above (a fragment golden)
+internal/console/testdata/rail-fresh.html:2,41,59	narrative_name	as above (a fragment golden)
+internal/console/testdata/rail-guided.html:2,41,59	narrative_name	as above (a fragment golden)
+internal/console/testdata/rail-presenter.html:2,44	narrative_name	as above (a fragment golden)
+internal/console/testdata/starthere-ready.html:4	narrative_name	as above (a fragment golden)
+internal/api/s9_round12_test.go:60	narrative_name	as above, in an API test
+public-docs/USERMANUAL.md:93	protocol_reference	Manual §4's one product-named fact: the Authorization scheme the HTTP Event Collector protocol defines and the hec exporter sends

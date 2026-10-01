@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+licenses: [acme-terms]
+services:
+  a:
+    image: docker.io/library/nginx@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    eula: { id: acme-terms, name: Acme Terms, url: https://example.com/terms-v1 }
+  b:
+    eula: { id: acme-terms, name: Acme Terms, url: https://example.com/terms-v2 }
+    image: docker.io/library/nginx@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa

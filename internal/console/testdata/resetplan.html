@@ -1,0 +1,21 @@
+<section class="reset-dialog" aria-label="reset impact">
+  <h2 class="section">Reset <span class="mono">pii-lab</span> to baseline</h2>
+  <div class="two-column">
+    <div class="col destroyed">
+      <h3>Destroyed</h3>
+      <ul><li>container gamma and the data inside it</li><li>container beta and the data inside it</li><li>2 objective results</li><li>playbook progress</li></ul>
+    </div>
+    <div class="col survives">
+      <h3>Survives</h3>
+      <ul><li>the instance and its hostnames</li><li>its credentials</li><li>its evidence journal</li></ul>
+    </div>
+  </div>
+  
+  <form hx-post="/api/v1alpha1/instances/pii-lab/reset" hx-headers='{"X-Podaro-CSRF":"csrf-token"}' hx-swap="none">
+    <button class="button primary" type="submit" hx-disabled-elt="this">Reset to baseline</button>
+  </form>
+  
+  <div class="action-output" role="alert" aria-live="assertive"></div>
+  <p class="muted note">The ladder below follows the reset as it runs.</p>
+  <p class="muted note">Destroying an instance stays on the command line: <span class="mono">podaro destroy pii-lab</span>.</p>
+</section>

@@ -1,0 +1,22 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "instance"}}<section class="ladder" aria-labelledby="ladder-eyebrow">
+  {{/* The section's own label, visible (treatment 0006 §5, plan S13):
+       an eyebrow over the headline, and the region named by it rather
+       than by an `aria-label` that repeated it. */ -}}
+  <p class="eyebrow" id="ladder-eyebrow">Ready ladder</p>
+  <h1 class="headline mono"><span class="instance-name">{{.Name}}</span> · {{.Template}} · <span class="ladder-bar{{if .Ladder.Regressed}} regressed{{end}}">{{.Ladder.Condensed}}</span>{{if .Ladder.Regressed}}<span class="sr-only"> regressed,</span>{{end}} {{.Ladder.Label}}</h1>
+  <table class="ladder-rows mono">
+    <tbody>
+{{$active := .Ladder.InProgress}}{{range .Services}}{{$g := rowGlyph . $active}}    <tr class="status-{{$g.Class}}">
+      <th scope="row">{{if .URL}}<a href="{{.URL}}">{{.Name}}</a>{{else}}{{.Name}}{{end}}</th>
+      <td><span class="glyph" aria-hidden="true">{{$g.Char}}</span> {{.Word}}</td>
+      <td class="muted">{{.Context}}</td>
+    </tr>
+{{end}}    <tr>
+      <th scope="row">checkpoints</th>
+      <td colspan="2">baseline {{.Checkpoints.Baseline.Passed}}/{{.Checkpoints.Baseline.Total}} · objectives {{.Checkpoints.Objective.Passed}}/{{.Checkpoints.Objective.Total}}</td>
+    </tr>
+    </tbody>
+  </table>
+{{if .Error}}{{template "error" .Error}}{{end}}</section>
+{{end}}

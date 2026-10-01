@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# podaroctl — run podaro as its account, from any login (INSTALL §2 step 6).
+# Ships in the release package beside install.sh, so `sudo
+# /opt/podaro/podaroctl …` works as extracted; the installer offers to put
+# a root-owned copy on PATH (/usr/local/bin), and then `sudo podaroctl …`
+# does — root-owned, so the account cannot change what root runs.
+#
+#   sudo podaroctl status                    podaro status, as the podaro account
+#   sudo podaroctl system restart            the service: start · stop · restart · status
+#   sudo podaroctl logs intro grafana        any podaro command, passed through unchanged
+#   sudo podaroctl shell                     an interactive login shell as the account
+#   podaroctl --print system restart         show the command it would run, and stop
+#
+# It adds no command of its own: every argument goes to `podaro`, run as
+# the account with the session it needs — the runtime directory lingering
+# keeps alive, the session bus in it, and ~/.local/bin on PATH — the way
+# compose wrappers hand everything to compose. As the account itself it
+# runs podaro directly. PODARO_USER names another account.
+set -euo pipefail
+
+PODARO_USER="${PODARO_USER:-podaro}"
+PRINT=0
+if [ "${1:-}" = "--print" ]; then PRINT=1; shift; fi
+case "${1:-}" in
+  -h|--help|"") sed -n '3,/^set -e/{/^#/p}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+esac
+
+die() { # cause [next]
+  printf '✗ podaroctl\n  cause     %s\n' "$1" >&2
+  [ -n "${2:-}" ] && printf '  next      %s\n' "$2" >&2
+  exit 2
+}
+
+entry="$(getent passwd "$PODARO_USER" || true)"
+[ -n "$entry" ] || die "no account named $PODARO_USER on this host" "sudo /opt/podaro/install.sh creates it (INSTALL §2) · PODARO_USER=<name> for another"
+home="$(printf '%s' "$entry" | cut -d: -f6)"
+uid="$(printf '%s' "$entry" | cut -d: -f3)"
+bin="$home/.local/bin/podaro"
+runtime="/run/user/$uid"
+
+me="$(id -u)"
+if [ "$me" != 0 ] && [ "$me" != "$uid" ]; then
+  die "run as root (sudo podaroctl …) or as $PODARO_USER" "sudo podaroctl $*"
+fi
+
+env_args=(HOME="$home" USER="$PODARO_USER" LOGNAME="$PODARO_USER" SHELL=/bin/bash
+  PATH="$home/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+  XDG_RUNTIME_DIR="$runtime" DBUS_SESSION_BUS_ADDRESS="unix:path=$runtime/bus"
+  TERM="${TERM:-dumb}" NO_COLOR="${NO_COLOR:-}" LANG="${LANG:-C.UTF-8}")
+
+if [ "$1" = shell ]; then
+  cmd=(bash -l)
+else
+  cmd=("$bin" "$@")
+fi
+
+if [ "$me" = "$uid" ]; then
+  full=(env "${env_args[@]}" "${cmd[@]}")
+else
+  full=(runuser -u "$PODARO_USER" -- env "${env_args[@]}" "${cmd[@]}")
+fi
+
+if [ "$PRINT" = 1 ]; then
+  printf '%q ' "${full[@]}"; printf '\n'
+  exit 0
+fi
+[ -S "$runtime/bus" ] || die "$PODARO_USER has no session bus at $runtime/bus" "sudo loginctl enable-linger $PODARO_USER (the installer does this; INSTALL §2)"
+[ "$1" = shell ] || [ -x "$bin" ] || die "no podaro binary at $bin" "sudo /opt/podaro/install.sh installs it (INSTALL §2)"
+exec "${full[@]}"

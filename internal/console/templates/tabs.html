@@ -1,0 +1,19 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "tabs"}}<nav class="tabs" role="tablist" aria-label="lab surfaces" x-data="tabs" x-on:keydown="walk">
+{{range $i, $t := .}}  <button class="tab" role="tab" id="tab-{{$t.ID}}" data-tab="{{$t.ID}}" data-kind="{{$t.Kind}}"{{if $t.URL}} data-url="{{$t.URL}}"{{end}} aria-controls="panel-{{$t.ID}}" aria-selected="{{if eq $i 0}}true{{else}}false{{end}}" tabindex="{{if eq $i 0}}0{{else}}-1{{end}}" x-on:click="select">{{$t.Label}}{{if $t.Word}} <span id="tab-stage-{{$t.ID}}" class="muted mono tab-stage">{{$t.Word}}</span>{{end}}</button>
+{{end}}</nav>
+{{end}}
+{{/* A panel other than the first is rendered hidden: Alpine hides the
+     unselected ones only once the deferred script has run, and until
+     then a browser is free to lay out and load every iframe on the page.
+     Overview is the tab that opens, so
+     Overview is the panel that starts visible. */}}
+{{define "tabpanel"}}<section class="panel panel-{{.Kind}}" role="tabpanel" id="panel-{{.ID}}" aria-labelledby="tab-{{.ID}}" hidden>
+{{if eq .Kind "newtab"}}  <div class="open-card">
+    <h3>{{.Label}}</h3>
+    <p class="muted">{{.Reason}}</p>
+    <a class="button primary" href="{{.URL}}" target="_blank" rel="noopener noreferrer">Open ↗</a>
+  </div>
+{{else if eq .Kind "iframe"}}  <iframe class="product" title="{{.Label}}" src="{{.URL}}" loading="lazy" referrerpolicy="no-referrer"></iframe>
+{{end}}</section>
+{{end}}

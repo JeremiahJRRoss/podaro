@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/lab/v1alpha1.json
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The licence-gate fixture (the reconciliation plan's R1): one inline
+# service declaring a EULA under an id nobody holds — the terms live at
+# RFC 2606's example domain — so the acceptance ceremony (API §6.2; spec
+# 0003 §7) is proven with no vendor's terms accepted on anyone's behalf.
+# A fake-runtime fixture: the image does not exist, and nothing pulls it
+# before the terms are accepted; that is what hack/license_gate_test.sh
+# asserts.
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata:
+  name: eula-lab
+  version: 0.1.0
+  title: Licence gate (runtime fixture)
+  description: >
+    One gated service under example terms — the acceptance ceremony,
+    proven without a vendor.
+licenses: [example-terms]
+services:
+  gated:
+    image: docker.io/example/terms-gated@sha256:9999999999999999999999999999999999999999999999999999999999999999
+    eula:
+      id: example-terms
+      name: Example Terms
+      url: https://example.com/terms
+      env: { ACCEPT_EXAMPLE_TERMS: "yes" }
+    endpoints: [ { purpose: ui, port: 80 } ]
+    embed: iframe
+    readiness: { probe: { port: 80, path: /, expect_status: 200 }, typical: 1s, budget: 1m }
+    resources: { cpu: 250m, memory: 64MiB }
+checkpoints:
+  - id: gated-answers
+    adapter: http
+    params: { url: http://gated:80/ }
+    expect: { status: 200 }

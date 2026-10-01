@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: big-int, version: 0.1.0, title: Big integers stay exact }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+seeds:
+  logs:
+    generator: { exec: { image: docker.io/acme/gen@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa } }
+    count: 1
+    params: { big: 18446744073709551615, small: 7 }

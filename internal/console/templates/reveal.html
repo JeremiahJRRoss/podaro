@@ -1,0 +1,21 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{/* A revealed credential and the control that brings it back. The
+     remask is done here, in the fragment that holds the value, rather
+     than by re-fetching a list somewhere above it: the reveal control
+     appears in two places — the Overview's credentials table and a
+     playbook step's actions — and a swap aimed at an ancestor one of
+     them does not have leaves the value in the DOM for good.
+     The value is *removed*, not hidden: a
+     secret still in the document is a secret still in the document. */}}
+{{define "reveal"}}<span class="revealed" x-data="reveal" data-remask="{{.Seconds}}">
+  <code class="value mono" data-value>{{.Value}}</code>
+  <button class="button copy" type="button" x-on:click="copy" aria-label="copy {{.Name}}">Copy</button>
+  <span class="muted countdown mono" role="timer" aria-live="off">re-masks in <span x-text="left">{{.Seconds}}</span>s</span>
+  <span class="masked" hidden aria-hidden="true">●●●●●●</span>
+  <button class="button reveal" type="button" hidden
+    hx-post="/api/v1alpha1/instances/{{.Instance}}/secrets/{{.Name}}/reveal"
+    hx-headers='{"X-Podaro-CSRF":"{{.CSRF}}"}'
+    hx-target="closest .revealed" hx-swap="outerHTML"
+    aria-label="reveal {{.Name}}">Reveal</button>
+</span>
+{{end}}

@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Podaro installer answers for a test host with room for the open-source
+# lab (4 GB).
+# For test hosts. It is not part of the user experience: users answer the
+# prompts.
+#
+#   sudo ./install.sh --yes --answers install.test.yaml
+#
+# The environment wins over this file (PODARO_DOMAIN, PODARO_PORT, ...).
+# The password is never written here: name a 0600 file, or leave it blank
+# and drop --yes so podaro auth setup prompts for it.
+domain: lab.example.test      # a test domain; hosts-file lines on the browsing machine
+port: 7777                    # the default; the only network port Podaro opens
+ip:                           # blank: detected from the default route
+tls: local-ca                 # or own, with cert_file and key_file
+cert_file:
+key_file:
+operator: podaro-admin        # the console login; the Linux account that owns the service is podaro
+password_file:                # a 0600 file holding the operator password
+install_podman: yes           # apt-get install podman and its rootless helpers if missing
+export_logs: no               # yes: export Podaro's own logs over the HTTP Event Collector protocol
+hec_endpoint:                 # https://host:8088 — the /services/collector/event path is added
+hec_token_file:               # a 0600 file holding the HEC token; never the token itself
+host_attribute:               # the `host` attribute on every exported record; blank: this host's name
+create_lab: no                # yes: end by creating the open-source lab as `intro` (two image pulls) and print its hostnames
+link_podaroctl: no            # yes: a root-owned copy of podaroctl in /usr/local/bin, so sudo podaroctl works from any shell

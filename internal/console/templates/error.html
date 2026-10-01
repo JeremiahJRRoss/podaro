@@ -1,0 +1,9 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "error"}}<section class="error-panel" role="alert">
+  <p class="error-code"><span class="glyph" aria-hidden="true">✗</span> <code>{{.Code}}</code> {{.Message}}</p>
+{{if .Cause}}  <p><span class="label">cause</span> {{.Cause}}</p>
+{{end}}{{if .Evidence}}  <p><span class="label">evidence</span> <a href="{{.Evidence}}">{{.Evidence}}</a></p>
+{{end}}{{if .Next}}  <p><span class="label">next</span> <code>{{.Next}}</code></p>
+{{end}}{{range .Details}}  <p><span class="label">detail</span> {{if .Code}}<code>{{.Code}}</code> · {{end}}<code>{{.Path}}</code>: {{.Hint}}</p>
+{{end}}</section>
+{{end}}

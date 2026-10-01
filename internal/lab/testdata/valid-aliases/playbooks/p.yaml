@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata: { name: p, title: P }
+steps:
+  - id: one
+    title: One
+    context: kafka
+    body: text
+    actions: [ { seed: orders }, { reveal: broker } ]
+    checkpoint: { id: c, adapter: kafka-lag, expect: { max: 0 }, hint: h }

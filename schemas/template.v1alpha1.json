@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.podaro.dev/lab/v1alpha1.json",
+  "$comment": "SPDX-License-Identifier: AGPL-3.0-only · Semantics: docs/specs/0003-template-module-v1alpha1.md · FROZEN v1alpha1: additive changes only. Frozen history: superseded by v1alpha2 on 2026-09-26; documents of this version are read but a retired name in them fails with PDR-E106.",
+  "title": "Podaro Template (v1alpha1)",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "services"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "const": "lab.podaro.dev/v1alpha1" },
+    "kind": { "const": "Template" },
+    "metadata": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "$comment": "Template semver (roadmap §7). Optional while authoring; the catalog requires it at install."
+        },
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "services": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+      "additionalProperties": { "$ref": "#/$defs/service" },
+      "$comment": "Keys are the instance service names — console tabs, checkpoint contexts, and in-lab DNS aliases."
+    },
+    "seeds": {
+      "type": "object",
+      "propertyNames": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+      "additionalProperties": { "$ref": "#/$defs/seed" }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": { "$ref": "../checkpoint/v1alpha1.json" },
+      "$comment": "Template-level checkpoints default to class: baseline (spec 0001 §1)."
+    },
+    "secrets": { "$ref": "#/$defs/secretsMap" },
+    "licenses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+      "$comment": "Ids of the EULA declarations this composition requires (declared in full by modules or inline services). `lab plan` lists them; create gates on acceptance (API §6.2). Validate cross-checks this list against the composed set."
+    },
+    "profiles": {
+      "type": "object",
+      "propertyNames": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "description": { "type": "string", "maxLength": 200, "$comment": "Declared compromises, e.g. '16 GB host'." },
+          "resources": {
+            "type": "object",
+            "propertyNames": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+            "additionalProperties": { "$ref": "../module/v1alpha1.json#/$defs/resources" },
+            "$comment": "Per-service overrides of the module resource envelopes."
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "service": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["use"],
+          "additionalProperties": false,
+          "properties": {
+            "use": {
+              "type": "string",
+              "pattern": "^modules/[a-z0-9]([a-z0-9-]*[a-z0-9])?@[A-Za-z0-9][A-Za-z0-9.-]*$",
+              "$comment": "Module reference: modules/<name>@<version>, resolved against the installed module library; name and version must match the module's metadata."
+            },
+            "config": {
+              "type": "object",
+              "$comment": "Deep-merged onto the module's config/init blocks: maps merge, arrays and scalars replace (spec 0003 §11). Keys are module-documented."
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["image"],
+          "additionalProperties": false,
+          "$comment": "Inline custom service — bring-your-own pinned image (roadmap §7 'custom module'). Digest-pinned, always.",
+          "properties": {
+            "image": { "$ref": "#/$defs/imageRef" },
+            "env": { "type": "object", "additionalProperties": { "type": "string" } },
+            "command": { "type": "array", "items": { "type": "string" }, "maxItems": 32 },
+            "endpoints": { "type": "array", "items": { "$ref": "../module/v1alpha1.json#/$defs/endpoint" }, "maxItems": 16 },
+            "embed": { "$ref": "../module/v1alpha1.json#/$defs/embed" },
+            "readiness": { "$ref": "../module/v1alpha1.json#/$defs/readiness" },
+            "resources": { "$ref": "../module/v1alpha1.json#/$defs/resources" },
+            "eula": { "$ref": "../module/v1alpha1.json#/$defs/eula" }
+          }
+        }
+      ]
+    },
+    "seed": {
+      "type": "object",
+      "required": ["generator"],
+      "additionalProperties": false,
+      "properties": {
+        "generator": {
+          "oneOf": [
+            {
+              "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel",
+              "$comment": "A built-in generator (registry v1alpha1: web-logs · pii-events · firewall-heavy · http-requests) or a composed module's generator alias (spec 0003 §10) — non-built-in names must resolve at validate. Deterministic via engine-supplied seed_value, spec 0002 §5 discipline."
+            },
+            {
+              "type": "object",
+              "required": ["exec"],
+              "additionalProperties": false,
+              "$comment": "The open extension point: a digest-pinned generator container judged through Spec 0002 (kind: seed).",
+              "properties": { "exec": { "$ref": "#/$defs/execSpec" } }
+            }
+          ]
+        },
+        "count": { "type": "integer", "minimum": 1, "maximum": 1000000, "$comment": "Passed to the generator on stdin (spec 0002 §3)." },
+        "params": { "type": "object", "$comment": "Generator-specific; never secret values." }
+      }
+    },
+    "execSpec": {
+      "type": "object",
+      "required": ["image"],
+      "additionalProperties": false,
+      "properties": {
+        "image": { "$ref": "#/$defs/imageRef" },
+        "args": { "type": "array", "items": { "type": "string" }, "maxItems": 32 },
+        "env": { "type": "object", "additionalProperties": { "type": "string" } },
+        "secrets": {
+          "type": "array",
+          "items": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+          "maxItems": 8,
+          "$comment": "Declared grants only; mounted as files per Spec 0002 §2."
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "cpu": { "type": "string" }, "memory": { "type": "string" } }
+        }
+      }
+    },
+    "imageRef": {
+      "type": "string",
+      "pattern": "@sha256:[a-f0-9]{64}$",
+      "$comment": "Digest-pinned OCI reference; tags are refused (spec 0002 §1)."
+    },
+    "secretsMap": {
+      "type": "object",
+      "propertyNames": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": { "enum": ["password", "token", "uuid"], "default": "password" },
+          "description": { "type": "string", "maxLength": 200 }
+        }
+      },
+      "$comment": "Names of per-instance generated secrets. Values never appear anywhere in a manifest; config refers to them as ${secret:<name>}."
+    }
+  }
+}

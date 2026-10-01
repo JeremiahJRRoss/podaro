@@ -1,0 +1,84 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "labsurface"}}<div class="lab" data-instance="{{.Instance.Name}}" x-data="lab" data-rail="open">
+  {{/* The rail first (plan S11, treatment 0006 §1): a learner reads the
+       step, then acts in the product, so the playbook is the left column
+       and comes first in the document — landmark order is reading order:
+       banner · playbook rail · tablist · workspace · contentinfo. The
+       shell's skip link (layout.html) is what lets a keyboard user pass
+       it. The way in and out of the rail sits outside what gets swapped:
+       the chooser, a playbook rail and the reset dialog all replace the
+       contents of `#rail`, so a control rendered inside any of them goes
+       with the next swap — and at drawer widths that left a touch-only
+       user inside a panel over the workspace with nothing to press.
+       The label is text, so it is also
+       the accessible name, and it says which way it goes. */}}
+  <aside class="rail-region" aria-label="playbook rail">
+    <button class="button rail-dismiss" type="button" data-rail-toggle
+      ><span class="when-open">Hide</span><span class="when-closed">Show</span></button>
+    <div id="rail">
+{{if .Rail}}{{template "rail" .Rail}}{{else}}{{template "playbooks" .PlaybooksData}}{{end}}
+    </div>
+  </aside>
+  {{/* The workspace: the tab strip and the panels, as tall as the window
+       (UX §10). `tabindex="-1"` is what lets the skip link land here. */}}
+  <div class="workspace" id="workspace" tabindex="-1">
+{{template "tabs" .Tabs}}
+  <div class="panels">
+    <section class="panel panel-overview" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+      {{/* The start-here card is Overview's, and the first thing on it
+           (UX §6: "exactly one per Overview"; Manual §7 lists it among
+           Overview's contents). It stood above the tab strip until S11,
+           where it cost every product panel its height. The region keeps
+           its id: instancelive.html swaps it out-of-band by id, wherever
+           it stands. */}}
+      <div id="start-here-region">{{template "starthere" .StartHere}}</div>
+      {{/* The live region is the ladder, not the page: an event refreshes
+           this from the instance twin and leaves the surface around it
+           standing. aria-live is here for the same reason — the ladder is
+           what changes, and announcing the whole page would be noise. */}}
+      <div id="ladder-region" aria-live="polite"
+        hx-get="/api/v1alpha1/instances/{{.Instance.Name}}"
+        hx-trigger="sse:ladder from:body, sse:job from:body, sse:checkpoint from:body"
+        hx-swap="innerHTML">
+{{template "instance" .Instance}}
+      </div>
+{{template "facts" .Instance}}
+      {{/* Credentials live on the Overview (Manual §7). The list is
+           fetched when the Overview is first shown rather than rendered
+           into the page: it is a read of the secret store, and a page
+           that is never looked at must not make one. Values are never in
+           it either way — the twin has none (UX §6). */}}
+      <section class="credentials" aria-label="credentials"
+        hx-get="/api/v1alpha1/instances/{{.Instance.Name}}/secrets"
+        hx-trigger="load once" hx-swap="innerHTML">
+      </section>
+    </section>
+{{range .Tabs}}{{if ne .Kind "overview"}}{{if ne .Kind "evidence"}}{{template "tabpanel" .}}{{end}}{{end}}{{end}}
+    {{/* The scoreboard is a query, so it runs when the tab is first
+         shown and not on page load. Once it has run it must stay true:
+         a verify or an attestation while the panel exists would leave
+         it saying what the board said before.
+         This panel does the first load and no more: keeping
+         up is the scoreboard's own job, because the scoreboard is what
+         knows which filter chip is in force, and a refresh from here
+         replaced a learner's chosen filter with All on the next event
+         (round 6). The triggers, and the reason `audit` is among them,
+         live in the evidence fragment. */}}
+    <section class="panel panel-evidence" role="tabpanel" id="panel-evidence" aria-labelledby="tab-evidence" hidden
+      hx-get="/api/v1alpha1/instances/{{.Instance.Name}}/checkpoints"
+      hx-trigger="revealed once"
+      hx-swap="innerHTML">
+    </section>
+  </div>
+  {{/* UX §9 advertises `?` as "shows this map", and the key flipped a
+       property no template read while the keymap fragment was rendered
+       nowhere at all — so the shortcut did nothing on every lab page.
+       It is here, hidden: `?` shows it,
+       and a page that opens with a panel nobody asked for is the
+       interruption Presenter forbids. It sits at the foot of the
+       workspace column, under the panels, so showing it never moves
+       the rail. */}}
+  <div id="keymap-region" hidden>{{template "keymap"}}</div>
+  </div>
+</div>
+{{end}}

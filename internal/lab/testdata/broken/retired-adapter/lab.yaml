@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# A negative fixture (the reconciliation plan's R2b): a v1alpha1 document that
+# names one retired adapter and one retired module exactly as the retirement
+# manifest spells them. Validation refuses both with PDR-E106. It carries no
+# image digest and no provisioning: nothing here can run.
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  search: { use: modules/splunk@9.4 }
+checkpoints:
+  - id: events-indexed
+    adapter: splunk-search
+    expect: { min: 1 }

@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  a: { use: modules/judge-a@1.0 }
+  g: { use: modules/gen-kafka@1.0 }

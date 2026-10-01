@@ -1,0 +1,13 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "facts"}}<section class="facts" aria-label="instance facts">
+  <h3 class="section">This lab</h3>
+  <dl class="fact-list mono">
+    <dt>console</dt><dd><a href="{{.ConsoleURL}}">{{.ConsoleURL}}</a></dd>
+    <dt>template</dt><dd>{{.Template}}</dd>
+{{if .Profile}}    <dt>profile</dt><dd>{{.Profile}}</dd>
+{{end}}    <dt>mode</dt><dd>{{.Mode}}{{if eq .Mode "authoring"}} <span class="chip">tracks a working directory</span>{{end}}</dd>
+    <dt>created</dt><dd>{{rfc3339 .Created}}</dd>
+{{range .Services}}{{if .URL}}    <dt>{{.Name}}</dt><dd><a href="{{.URL}}">{{.URL}}</a></dd>
+{{end}}{{end}}  </dl>
+</section>
+{{end}}

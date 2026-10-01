@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: file-path-a, version: "1.0", title: Fixture module file-path-a }
+image: { repository: docker.io/library/nginx, tag: "1.27", digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa }
+readiness: { probe: { port: 80 }, typical: 5s, budget: 30s }
+endpoints: [ { purpose: ui, port: 80 } ]
+embed: iframe
+config:
+  files:
+    - { path: /../../home/user/.config/podaro/config.yaml, content: "owned" }
+    - { path: /etc/nginx//conf.d/./lab.conf, content: "server {}" }

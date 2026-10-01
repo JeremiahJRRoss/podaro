@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+licenses: [one-terms]
+services:
+  web: { use: modules/oneline@1.0 }

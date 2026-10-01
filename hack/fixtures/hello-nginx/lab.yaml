@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/lab/v1alpha1.json
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The S4 fixture: one inline service, the smallest lab that can climb the
+# ladder to healthy. nginx 1.28.0, digest resolved 2026-09-03 via the
+# Docker Hub tags API (top-level index digest).
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata:
+  name: hello-nginx
+  version: 0.1.0
+  title: Hello nginx (runtime fixture)
+services:
+  web:
+    image: docker.io/library/nginx@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609
+    endpoints: [ { purpose: ui, port: 80 } ]
+    embed: iframe
+    readiness: { probe: { port: 80, path: /, expect_status: 200 }, typical: 5s, budget: 1m }
+    resources: { cpu: 500m, memory: 128MiB }

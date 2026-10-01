@@ -1,0 +1,3 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "session"}}<span class="session">signed in as <span class="mono">{{.Subject}}</span> · {{.Mechanism}} · {{.Scope}}{{if .Instance}} · instance <span class="mono">{{.Instance}}</span>{{end}}{{if .Expires}} · expires <span class="mono">{{rfc3339 .Expires}}</span>{{end}}</span>
+{{end}}

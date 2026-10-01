@@ -1,0 +1,45 @@
+<section class="evidence" aria-label="evidence"
+  hx-get="/api/v1alpha1/instances/pii-lab/checkpoints?filter=objective"
+  hx-trigger="sse:checkpoint from:body, sse:job from:body, sse:audit from:body"
+  hx-target="this" hx-swap="outerHTML">
+  <nav class="chips" aria-label="filter">
+    <a class="chip" href="?filter=all" hx-get="/api/v1alpha1/instances/pii-lab/checkpoints?filter=all" hx-target="closest .evidence" hx-swap="outerHTML">All</a>
+    <a class="chip" href="?filter=baseline" hx-get="/api/v1alpha1/instances/pii-lab/checkpoints?filter=baseline" hx-target="closest .evidence" hx-swap="outerHTML">baseline</a>
+    <a class="chip on" href="?filter=objective" hx-get="/api/v1alpha1/instances/pii-lab/checkpoints?filter=objective" hx-target="closest .evidence" hx-swap="outerHTML" aria-current="true">objective</a>
+    <a class="chip" href="?filter=fail" hx-get="/api/v1alpha1/instances/pii-lab/checkpoints?filter=fail" hx-target="closest .evidence" hx-swap="outerHTML">✗</a>
+    <a class="chip" href="?filter=attest" hx-get="/api/v1alpha1/instances/pii-lab/checkpoints?filter=attest" hx-target="closest .evidence" hx-swap="outerHTML">◇</a>
+    <span class="spacer"></span>
+    <a class="button" href="/api/v1alpha1/instances/pii-lab/evidence/report.junit.xml" download>Download report</a>
+  </nav>
+  <table class="scoreboard mono">
+    <thead><tr><th scope="col">status</th><th scope="col">checkpoint</th><th scope="col">expectation</th><th scope="col">took</th><th scope="col">at</th></tr></thead>
+    <tbody>
+      <tr class="status-fail">
+        <td><span class="glyph" aria-hidden="true">✗</span> <span class="word">failed</span></td>
+        <th scope="row">no-ssn-in-index <span class="muted">objective</span></th>
+        <td class="expectation">count 0</td>
+        <td class="muted">1.4s</td>
+        <td class="muted">2026-09-03T14:02:00Z</td>
+      </tr>
+      <tr class="status-attest">
+        <td><span class="glyph" aria-hidden="true">◇</span> <span class="word">self-verified</span></td>
+        <th scope="row">routes-understood <span class="muted">objective</span></th>
+        <td class="expectation">attest</td>
+        <td class="muted">0s</td>
+        <td class="muted">2026-09-03T14:04:00Z</td>
+      </tr>
+      <tr class="status-pending">
+        <td><span class="glyph" aria-hidden="true">○</span> <span class="word">not verified yet</span></td>
+        <th scope="row">never-run <span class="muted">objective</span></th>
+        <td class="expectation">status 200</td>
+        <td class="muted"></td>
+        <td class="muted"></td>
+      </tr>
+    </tbody>
+  </table>
+  
+  
+  <div class="journal-region"
+    hx-get="/api/v1alpha1/instances/pii-lab/evidence"
+    hx-trigger="load" hx-target="this" hx-swap="innerHTML"></div>
+</section>

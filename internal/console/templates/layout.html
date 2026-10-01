@@ -1,0 +1,88 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false,"selfRequestsOnly":true,"responseHandling":[{"code":".*","swap":true}]}'>
+<title>{{.Title}}</title>
+{{/* The asset URLs' cache key is the bundle's content revision, not the
+     release number: assets are served for a day, and an in-place
+     upgrade changes the bundles without touching the number, which
+     would have run this markup against a cached script that lacks
+     the component it names. */ -}}
+{{/* The theme this browser chose, applied before the stylesheet paints
+     (UX §4, plan S12): synchronous on purpose, and ahead of the
+     stylesheet, so the first paint already wears it. An external file
+     under `script-src 'self'`; nothing inline. */ -}}
+<script src="/assets/theme.js?v={{.Assets}}"></script>
+<link rel="stylesheet" href="/assets/console.css?v={{.Assets}}">
+<script src="/assets/htmx.min.js?v={{.Assets}}" defer></script>
+<script src="/assets/sse.min.js?v={{.Assets}}" defer></script>
+<script src="/assets/console.js?v={{.Assets}}" defer></script>
+<script src="/assets/alpine-csp.min.js?v={{.Assets}}" defer></script>
+</head>
+<body class="{{if .Instance}}lab-page{{else}}doc-page{{end}}" hx-headers='{"Accept":"text/html"{{if .Session}},"X-Podaro-CSRF":"{{.Session.CSRF}}"{{end}}}'>
+{{/* The first tab stop on every signed-in page (UX §9, plan S11): past
+     the status bar and — on a lab page, where the playbook rail now comes
+     first in the document — past the rail, to the workspace, so a keyboard
+     user is not made to tab through a playbook to reach a product. Where
+     there is no workspace it goes to the main region. The sign-in page
+     has nothing to skip and starts with focus in its form (login.html's
+     autofocus), which is where a skip link would have sent it; rendered
+     there, the link came *after* that focus and was never the first stop.
+     Off-canvas until focused, by the
+     stylesheet: never an inline style (CSP `style-src 'self'`). */ -}}
+{{if .Session}}<a class="skip-link" href="{{if .Instance}}#workspace{{else}}#main{{end}}">Skip to {{if .Instance}}the workspace{{else}}the content{{end}}</a>
+{{end -}}
+<header class="statusbar" role="banner">
+  {{/* An instance-bound session (API §2.4) is refused on the operator
+       console — it lists every instance, which is the first thing that
+       grant excludes — so its way home is its own lab, which is this
+       host's root. */ -}}
+  <a class="brand" href="{{if .Bound}}/{{else}}{{.HomeURL}}/{{end}}">{{brand}}</a>
+  {{/* The condensed bar wears `--status-warn` when the ladder has fallen
+       from ready (UX §5, plan S14). Its cells are glyphs, so the fact is
+       in the accessible name as well; the sentence that announces it is
+       the sr-only region beside it, which is empty until the fall, so a
+       lab that is merely climbing announces nothing. */ -}}
+  {{if .Instance}}<span class="mono instance-name">{{.Instance.Name}}</span> <span id="statusbar-ladder" class="mono ladder-bar{{if .Instance.Ladder.Regressed}} regressed{{end}}" aria-label="ready ladder{{if .Instance.Ladder.Regressed}}, regressed{{end}}">{{.Instance.Ladder.Condensed}}</span> <span id="statusbar-regression" class="sr-only" role="status" aria-live="polite">{{if .Instance.Ladder.Regressed}}The ready ladder regressed: this lab was ready and is not now. {{end}}</span> <span id="statusbar-label" class="mono">{{.Instance.Ladder.Label}}</span>{{if eq .Instance.Mode "authoring"}} <span class="chip mono">authoring</span>{{end}}{{end}}
+  <span class="spacer"></span>
+  {{if .Instance}}<a class="button bar-action" href="#panel-evidence" data-tab-link="evidence">Evidence</a>
+  {{/* Reset is structurally absent from the attendee grant (API §2.4),
+       and `reset-plan` needs read, which an instance session does not
+       have. Rendering the link on the strength of "there is an instance"
+       offered a control whose only answer is 403 — swapped, by this
+       console's response handling, straight into the playbook rail. */ -}}
+  {{if not .Bound}}<a class="button bar-action" href="{{.HomeURL}}/" hx-get="/api/v1alpha1/instances/{{.Instance.Name}}/reset-plan" hx-target="#rail" hx-swap="innerHTML">Reset…</a>{{end}}{{end}}
+  {{/* The theme control (UX §6): on every page, session or not, because
+       the choice is the browser's. None is rendered pressed — the server
+       does not know the choice and must not; the component presses the
+       stored one, System when nothing is stored. */ -}}
+  <div class="theme" role="group" aria-label="theme" x-data="theme">
+    <button type="button" class="theme-choice" data-theme-choice="system" aria-pressed="false" x-on:click="choose">System</button>
+    <button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="false" x-on:click="choose">Light</button>
+    <button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false" x-on:click="choose">Dark</button>
+  </div>
+  {{if .Session}}<span class="who">signed in as <span class="mono">{{.Session.Subject}}</span></span>
+  <form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="{{.Session.CSRF}}"><button type="submit" class="button">Sign out</button></form>{{end}}
+</header>
+<main id="main" role="main" tabindex="-1"
+{{- /* With a feed the shell only opens the connection: the regions that
+       listen name themselves inside the body, because they are smaller
+       than the page. A refresh of the whole main region would swap the
+       lab surface away and leave the ladder alone in its place. */ -}}
+{{- if .Feed}} hx-ext="sse" sse-connect="{{.Feed}}"
+{{- else if .Poll}} hx-get="{{.Poll}}" hx-trigger="every 2s" hx-swap="innerHTML" aria-live="polite"{{end}}>
+{{.Body}}</main>
+{{/* `GET /system` needs read as well, so the same session that cannot
+     reset cannot read the footer's posture line either. It gets the
+     version, which is what a signed-out visitor gets and is true for
+     everyone. Every page, signed in or not, links to the licence and
+     the source offer (/legal, public — the reconciliation §7.2): a
+     relative link, so the page carries no URL off the gateway. */ -}}
+<footer role="contentinfo" class="muted">{{if and .Session (not .Bound)}}<span id="system" hx-get="/api/v1alpha1/system" hx-trigger="load" hx-swap="innerHTML"></span>{{else}}<span class="mono">podaro v{{.Version}}</span>{{end}} · <a href="/legal">Licence and source</a></footer>
+</body>
+</html>
+{{end}}

@@ -1,0 +1,6 @@
+<nav class="tabs" role="tablist" aria-label="lab surfaces" x-data="tabs" x-on:keydown="walk">
+  <button class="tab" role="tab" id="tab-overview" data-tab="overview" data-kind="overview" aria-controls="panel-overview" aria-selected="true" tabindex="0" x-on:click="select">Overview</button>
+  <button class="tab" role="tab" id="tab-beta" data-tab="beta" data-kind="iframe" data-url="https://beta-pii-lab.lab.example.com:8443" aria-controls="panel-beta" aria-selected="false" tabindex="-1" x-on:click="select">beta <span id="tab-stage-beta" class="muted mono tab-stage">ready</span></button>
+  <button class="tab" role="tab" id="tab-gamma" data-tab="gamma" data-kind="newtab" data-url="https://gamma-pii-lab.lab.example.com:8443" aria-controls="panel-gamma" aria-selected="false" tabindex="-1" x-on:click="select">gamma <span id="tab-stage-gamma" class="muted mono tab-stage">ready</span></button>
+  <button class="tab" role="tab" id="tab-evidence" data-tab="evidence" data-kind="evidence" aria-controls="panel-evidence" aria-selected="false" tabindex="-1" x-on:click="select">Evidence</button>
+</nav>

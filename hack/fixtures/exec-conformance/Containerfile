@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The Spec 0002 conformance fixture (plan S6): a tiny local image whose
+# one script produces each row of the §6 error table on demand —
+# pass · fail · crash (exit 2) · garbage (non-contract stdout) · sleep
+# (outlives any timeout) · secret (reads a granted secret as a file) —
+# · leak (a misbehaving adapter that echoes a granted secret everywhere —
+# what the engine's redaction filter exists for) — and answers a seed
+# input with the seed verdict. hack/exec_conformance.sh
+# builds and drives it under the five walls; the fake runtime mirrors the
+# same table for go test. busybox 1.37.0, index digest resolved 2026-09-05
+# via the Docker Hub tags API.
+FROM docker.io/library/busybox@sha256:9db7b59979c38555a39def84a31fb98b5296952f9e3afd4f6f11f05b07adfab0 AS base
+COPY conformance.sh /usr/local/bin/conformance
+ENTRYPOINT ["/bin/sh", "/usr/local/bin/conformance"]
+
+# The engine refuses a root-UID image before anything runs (PDR-E505):
+# `podman build --target root` builds the refused variant for that row.
+# (Two stages rather than a build ARG: buildah's layer cache reused the
+# USER step across --build-arg values on CI, yielding one image twice.)
+FROM base AS root
+USER 0:0
+
+# The fixture proper — the last stage is what a plain build produces.
+FROM base AS nonroot
+USER 65532:65532

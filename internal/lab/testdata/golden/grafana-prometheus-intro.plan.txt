@@ -1,0 +1,27 @@
+grafana-prometheus-intro@1.0.0 · Grafana & Prometheus Intro
+  profile        standard · 4 GB host · all open source
+  services (2)
+    grafana      modules/grafana@12.4 · iframe · cpu 500m · memory 512MiB · ready typically 20s (budget 1m)
+      image      docker.io/grafana/grafana@sha256:7753ad493720e33560077e8bc5e05fbce4ade777f1387b19ab5050b6777111dd
+      endpoints  ui :3000/http
+      config     4 env vars · 1 file (/etc/grafana/provisioning/datasources/prometheus.yaml)
+    prometheus   modules/prometheus@3.13 · iframe · cpu 500m · memory 512MiB · ready typically 15s (budget 1m)
+      image      docker.io/prom/prometheus@sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69
+      endpoints  ui :9090/http · api :9090/http
+      config     0 env vars · 1 file (/etc/prometheus/prometheus.yml)
+  network        one isolated network per instance · aliases: grafana · prometheus
+  volumes        none declared · v1alpha2 modules keep state in container storage; destroy removes it
+  secrets (1)    grafana (password) · generated per instance, never printed
+  seeds (1)
+    query-load  http-requests (built-in) · count 200 · params path, service
+  checkpoints    baseline 4 · objectives 2
+    prometheus-ready  baseline · http · gate · template
+    grafana-healthy   baseline · http · gate · template
+    self-scrape-up    baseline · http · gate · template
+    grafana-scraped   baseline · http · gate · template
+    traffic-observed  objective · http · gate · playbook first-dashboard · step drive-real-traffic
+    dashboard-exists  objective · http · gate · playbook first-dashboard · step build-a-dashboard
+  playbooks (1)
+    first-dashboard  Your First Verified Dashboard · 4 steps · 2 objectives · guided, presenter
+  licenses (0)
+  exec images    none · every judge and generator is built-in

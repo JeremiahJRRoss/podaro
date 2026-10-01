@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/lab/v1alpha2.json
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha2
+kind: Template
+metadata:
+  name: grafana-prometheus-intro
+  version: 1.0.0
+  title: Grafana & Prometheus Intro
+  description: >
+    A small, all-open-source template proving none of this is
+    stack-specific — Prometheus scraping itself and Grafana, Grafana
+    visualizing it, in 4 GB (Manual §12).
+
+services:
+  prometheus:
+    use: modules/prometheus@3.13
+  grafana:
+    use: modules/grafana@12.4
+
+seeds:
+  query-load:
+    generator: http-requests
+    count: 200
+    params: { service: prometheus, path: "/api/v1/query?query=up" }
+
+checkpoints:
+  - id: prometheus-ready
+    adapter: http
+    params: { url: http://prometheus:9090/-/ready }
+    expect: { status: 200 }
+  - id: grafana-healthy
+    adapter: http
+    params: { url: http://grafana:3000/api/health }
+    expect: { status: 200 }
+  - id: self-scrape-up
+    adapter: http
+    params: { url: "http://prometheus:9090/api/v1/query?query=up{job=\"prometheus\"}" }
+    expect: { json_path: { path: "$.data.result[0].value[1]", op: eq, value: "1" } }
+    retries: { attempts: 6, backoff: 5s }
+  - id: grafana-scraped
+    adapter: http
+    params: { url: "http://prometheus:9090/api/v1/query?query=up{job=\"grafana\"}" }
+    expect: { json_path: { path: "$.data.result[0].value[1]", op: eq, value: "1" } }
+    retries: { attempts: 6, backoff: 5s }
+
+profiles:
+  standard:
+    description: 4 GB host · all open source
+    resources:
+      prometheus: { cpu: 500m, memory: 512MiB }
+      grafana:    { cpu: 500m, memory: 512MiB }

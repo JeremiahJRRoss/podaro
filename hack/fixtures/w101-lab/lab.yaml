@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/lab/v1alpha1.json
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# The PDR-W101 fixture (the reconciliation plan's R1): a playbook whose
+# one objective the template already makes true, so the engine's warning
+# at create — an objective green before the learner did anything (spec
+# 0001 §1) — is proven on a first-party lab. nginx 1.28.0, the digest of
+# the hello-nginx fixture; hack/w101_test.sh drives it.
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata:
+  name: w101-lab
+  version: 0.1.0
+  title: An objective true at create (runtime fixture)
+  description: >
+    The page answers before anyone arrives, and the objective asks
+    whether it does — the case PDR-W101 exists for.
+services:
+  web:
+    image: docker.io/library/nginx@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609
+    endpoints: [ { purpose: ui, port: 80 } ]
+    embed: iframe
+    readiness: { probe: { port: 80, path: /, expect_status: 200 }, typical: 5s, budget: 1m }
+    resources: { cpu: 250m, memory: 64MiB }
+checkpoints:
+  - id: web-answers
+    adapter: http
+    params: { url: http://web:80/ }
+    expect: { status: 200 }

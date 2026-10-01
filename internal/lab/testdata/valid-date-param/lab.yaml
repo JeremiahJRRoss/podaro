@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: date-param, version: 0.1.0, title: Dates stay text }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+seeds:
+  logs:
+    generator: { exec: { image: docker.io/acme/gen@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa } }
+    count: 1
+    params: { date: 2026-09-03, at: 2026-09-03T10:00:00Z }

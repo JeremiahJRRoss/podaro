@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata: { name: shared-objective, title: Shared objective }
+steps:
+  - id: one
+    title: Add the job
+    body: text
+    checkpoint: { ref: learner-job }

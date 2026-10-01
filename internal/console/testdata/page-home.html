@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false,"selfRequestsOnly":true,"responseHandling":[{"code":".*","swap":true}]}'>
+<title>Podaro</title>
+<script src="/assets/theme.js?v=0123456789ab"></script>
+<link rel="stylesheet" href="/assets/console.css?v=0123456789ab">
+<script src="/assets/htmx.min.js?v=0123456789ab" defer></script>
+<script src="/assets/sse.min.js?v=0123456789ab" defer></script>
+<script src="/assets/console.js?v=0123456789ab" defer></script>
+<script src="/assets/alpine-csp.min.js?v=0123456789ab" defer></script>
+</head>
+<body class="doc-page" hx-headers='{"Accept":"text/html","X-Podaro-CSRF":"csrf-token"}'>
+<a class="skip-link" href="#main">Skip to the content</a>
+<header class="statusbar" role="banner">
+  <a class="brand" href="https://lab.example.com:8443/">Podaro</a>
+  
+  <span class="spacer"></span>
+  
+  <div class="theme" role="group" aria-label="theme" x-data="theme">
+    <button type="button" class="theme-choice" data-theme-choice="system" aria-pressed="false" x-on:click="choose">System</button>
+    <button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="false" x-on:click="choose">Light</button>
+    <button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false" x-on:click="choose">Dark</button>
+  </div>
+  <span class="who">signed in as <span class="mono">jross</span></span>
+  <form method="post" action="/logout" class="inline"><input type="hidden" name="csrf" value="csrf-token"><button type="submit" class="button">Sign out</button></form>
+</header>
+<main id="main" role="main" tabindex="-1" hx-get="/api/v1alpha1/instances" hx-trigger="every 2s" hx-swap="innerHTML" aria-live="polite">
+<table class="instances">
+  <thead><tr><th>instance</th><th>template</th><th>ladder</th><th>checkpoints</th></tr></thead>
+  <tbody>
+  <tr>
+    <td><a class="mono" href="https://pii-lab.lab.example.com:8443">pii-lab</a></td>
+    <td class="mono">conformance-lab@1.0.0</td>
+    <td class="mono"><span class="ladder-bar">●●◐○○○○</span> initializing</td>
+    <td class="mono">baseline 0/8 · objectives 0/4</td>
+  </tr>
+  <tr>
+    <td><a class="mono" href="https://my-lab.lab.example.com:8443">my-lab</a> <span class="chip mono">authoring</span></td>
+    <td class="mono">hello-nginx@0.1.0</td>
+    <td class="mono"><span class="ladder-bar">●●○○○○○</span> failed</td>
+    <td class="mono">baseline 0/0 · objectives 0/0</td>
+  </tr>
+  </tbody>
+</table>
+</main>
+<footer role="contentinfo" class="muted"><span id="system" hx-get="/api/v1alpha1/system" hx-trigger="load" hx-swap="innerHTML"></span> · <a href="/legal">Licence and source</a></footer>
+</body>
+</html>

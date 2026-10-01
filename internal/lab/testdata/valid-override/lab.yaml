@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: override, title: Override fixture }
+secrets:
+  dashboard-login: { kind: password, description: template-declared replacement }
+services:
+  dashboard:
+    use: modules/sibling-secret@1.0
+    config:
+      env:
+        STORE_HOSTS: http://external-store.lab.internal:9200
+        STORE_PASSWORD: "${secret:dashboard-login}"

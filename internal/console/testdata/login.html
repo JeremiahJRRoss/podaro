@@ -1,0 +1,16 @@
+<section class="login">
+  <p class="eyebrow">Podaro</p>
+  <h1>Sign in</h1>
+  <form id="login" method="post" action="/api/v1alpha1/auth/session" hx-post="/api/v1alpha1/auth/session" hx-target="#login-error" hx-swap="innerHTML">
+    <label for="username">username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus value="jross">
+    <label for="password">password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <input type="hidden" name="next" value="https://pii-lab.lab.example.com:8443/">
+    <button type="submit" class="button primary">Sign in</button>
+  </form>
+  <div id="login-error"><section class="error-panel" role="alert">
+  <p class="error-code"><span class="glyph" aria-hidden="true">✗</span> <code>PDR-E301</code> username or password is wrong</p>
+</section>
+</div>
+</section>

@@ -1,0 +1,28 @@
+conformance-lab@0.1.0 · Conformance lab (runtime fixture)
+  profile          standard · any host · fake runtime
+  services (2)
+    sink         inline · api-only · cpu 250m · memory 64MiB · ready typically 1s (budget 1m)
+      image      docker.io/example/ndjson-sink@sha256:5555555555555555555555555555555555555555555555555555555555555555
+      endpoints  api :8080/http
+      config     1 env var · 0 files
+    web          inline · iframe · cpu 250m · memory 64MiB · ready typically 5s (budget 1m)
+      image      docker.io/library/nginx@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609
+      endpoints  ui :80/http
+  network          one isolated network per instance · aliases: sink · web
+  volumes          none declared · v1alpha2 modules keep state in container storage; destroy removes it
+  secrets (1)      admin (password) · generated per instance, never printed
+  seeds (2)
+    events  web-logs (built-in) · count 120 · params batch, path, purpose, service
+    knock   http-requests (built-in) · count 50 · params path, service
+  checkpoints      baseline 3 · objectives 3
+    web-answers        baseline · http · gate · template
+    web-running        baseline · container · gate · template
+    judge-runs         baseline · exec · gate · template
+    knocks-counted     objective · http · gate · playbook conformance · step knock
+    events-held        objective · http · gate · playbook conformance · step deliver
+    routes-understood  objective · attest · gate · playbook conformance · step confirm
+  playbooks (1)
+    conformance  Every built-in, once · 4 steps · 3 objectives · guided, presenter
+  licenses (0)
+  exec images (1)
+    checkpoint judge-runs  docker.io/podaro/exec-conformance@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee · no secret grants

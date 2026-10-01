@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: ui-tcp, version: "1.0", title: Fixture module with a tcp ui endpoint }
+image: { repository: docker.io/library/nginx, tag: "1.27", digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa }
+readiness: { probe: { port: 80 }, typical: 5s, budget: 30s }
+endpoints:
+  - purpose: ui
+    port: 9000
+    scheme: tcp
+embed: iframe
+resources: { cpu: 500m, memory: 128MiB }

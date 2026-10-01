@@ -1,0 +1,33 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "legal"}}<section class="legal" aria-labelledby="legal-title">
+  {{/* GET /system/legal's fragment, and the body of the /legal page (the
+       reconciliation §7.2): everything below is a field of legal.Info —
+       the labels are this template's, the facts are the binary's. The
+       source locations are the only links, and they are links, never
+       requests: the page fetches nothing off the gateway. */ -}}
+  <p class="eyebrow">{{.Product}} v{{.Version}}</p>
+  <h1 id="legal-title">Licence and source</h1>
+  <dl class="facts">
+    <dt>licence</dt><dd><span class="mono">{{.License}}</span> · {{.LicenseText}}</dd>
+    <dt>copyright</dt><dd>{{.Copyright}}</dd>
+    <dt>licensing</dt><dd>{{.Licensing}}</dd>
+    <dt>source of this build</dt><dd>{{.Source.Offer}}{{if .Source.URL}}<br><a class="mono" href="{{.Source.URL}}" rel="noreferrer">{{.Source.URL}}</a>{{end}}</dd>
+    {{- if .Source.Operator}}
+    <dt>the operator's statement</dt><dd>the operator of this installation says the source of the build it runs is at <a class="mono" href="{{.Source.Operator}}" rel="noreferrer">{{.Source.Operator}}</a></dd>
+    {{- end}}
+    <dt>repository</dt><dd><a class="mono" href="{{.Source.Repository}}" rel="noreferrer">{{.Source.Repository}}</a></dd>
+    <dt>releases</dt><dd>{{.Releases.Verify}}</dd>
+    <dt>the name</dt><dd>{{.Trademarks}}</dd>
+  </dl>
+  <h2>Third-party components</h2>
+  <table class="third-party">
+    <thead><tr><th scope="col">Component</th><th scope="col">Version</th><th scope="col">Licence</th><th scope="col">Part of the binary</th></tr></thead>
+    <tbody>
+{{- range .ThirdParty}}
+      <tr><td class="mono">{{.Name}}</td><td class="mono">{{.Version}}</td><td class="mono">{{.License}}</td><td>{{.How}}</td></tr>
+{{- end}}
+    </tbody>
+  </table>
+  <p class="muted note">Inside this binary: <span class="mono">{{join .Files}}</span>.</p>
+</section>
+{{end}}

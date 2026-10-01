@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/module/v1alpha2.json
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha2
+kind: Module
+metadata:
+  name: prometheus
+  version: "3.13"
+  title: Prometheus
+  description: >
+    Prometheus scraping itself and the sibling `grafana` service — two live
+    targets with zero extra machinery (spec 0003 §9.3; override the scrape
+    config via config merge).
+image:
+  repository: docker.io/prom/prometheus
+  tag: v3.13.2
+  digest: sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69
+license:
+  spdx: Apache-2.0
+config:
+  files:
+    - path: /etc/prometheus/prometheus.yml
+      content: |
+        global:
+          scrape_interval: 5s
+        scrape_configs:
+          - job_name: prometheus
+            static_configs:
+              - targets: ["localhost:9090"]
+          - job_name: grafana
+            static_configs:
+              - targets: ["grafana:3000"]
+readiness:
+  probe:
+    port: 9090
+    path: /-/ready
+  typical: 15s
+  budget: 1m
+endpoints:
+  - { purpose: ui, port: 9090, scheme: http }
+  - { purpose: api, port: 9090, scheme: http }
+embed: iframe
+resources:
+  cpu: 500m
+  memory: 512MiB

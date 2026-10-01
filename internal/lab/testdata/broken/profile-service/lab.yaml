@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+profiles:
+  standard:
+    resources:
+      grafana: { cpu: "1", memory: 1GiB }

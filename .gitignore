@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+
+# Build artifacts
+/podaro
+/bin/
+/dist/
+*.test
+*.out
+
+# Backups and editor droppings
+*.bak
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+.DS_Store
+
+# Python bytecode from running hack/*.py
+__pycache__/

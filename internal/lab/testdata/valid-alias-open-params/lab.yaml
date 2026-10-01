@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: alias-open-params, version: 0.1.0, title: Alias params are open }
+services:
+  kafka: { use: modules/judge-a@1.0 }
+checkpoints:
+  - id: lag-ok
+    adapter: kafka-lag
+    params:
+      left: { adapter: shard, params: { topic: orders } }
+      before: { adapter: kafka-lag }
+    expect: { max: 10 }

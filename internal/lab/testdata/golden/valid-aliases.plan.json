@@ -1,0 +1,192 @@
+{
+  "plan": {
+    "template": {
+      "name": "aliases",
+      "version": "0.1.0",
+      "title": "Alias fixture",
+      "path": "testdata/valid-aliases"
+    },
+    "services": [
+      {
+        "name": "custom",
+        "image": {
+          "repository": "docker.io/library/nginx",
+          "tag": "",
+          "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "endpoints": [
+          {
+            "purpose": "ui",
+            "port": 80,
+            "scheme": "http"
+          }
+        ],
+        "embed": "newtab",
+        "resources": {},
+        "eula": "custom-terms"
+      },
+      {
+        "name": "kafka",
+        "module": "modules/judge-a@1.0",
+        "image": {
+          "repository": "docker.io/library/nginx",
+          "tag": "1.27",
+          "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "endpoints": [
+          {
+            "purpose": "ui",
+            "port": 80,
+            "scheme": "http"
+          }
+        ],
+        "embed": "iframe",
+        "resources": {
+          "cpu": "500m",
+          "memory": "128MiB"
+        },
+        "readiness": {
+          "typical": "5s",
+          "budget": "30s"
+        }
+      }
+    ],
+    "network": {
+      "scope": "instance",
+      "isolated": true,
+      "aliases": [
+        "custom",
+        "kafka"
+      ]
+    },
+    "volumes": [],
+    "secrets": [
+      {
+        "name": "broker",
+        "kind": "token",
+        "declared_by": [
+          "judge-a"
+        ]
+      },
+      {
+        "name": "extra",
+        "kind": "uuid",
+        "declared_by": [
+          "template"
+        ]
+      }
+    ],
+    "seeds": [
+      {
+        "name": "exec-seed",
+        "generator": "exec",
+        "kind": "exec",
+        "image": "ghcr.io/acme/gen@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      {
+        "name": "orders",
+        "generator": "kafka-orders",
+        "kind": "alias",
+        "image": "ghcr.io/acme/kafka-orders@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "count": 5
+      }
+    ],
+    "checkpoints": {
+      "baseline": [
+        {
+          "id": "lag-ok",
+          "adapter": "kafka-lag",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "judge-exec",
+          "adapter": "exec",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "count-judge",
+          "adapter": "exec",
+          "severity": "gate",
+          "source": "template"
+        }
+      ],
+      "objective": [
+        {
+          "id": "c",
+          "adapter": "kafka-lag",
+          "severity": "gate",
+          "source": "playbook p · step one"
+        }
+      ]
+    },
+    "playbooks": [
+      {
+        "name": "p",
+        "title": "P",
+        "steps": 1,
+        "objectives": 1,
+        "modes": [
+          "guided",
+          "presenter",
+          "repro"
+        ]
+      }
+    ],
+    "licenses": [
+      {
+        "id": "custom-terms",
+        "name": "Custom Terms",
+        "url": "https://example.com/terms",
+        "required_by": [
+          "custom"
+        ]
+      }
+    ],
+    "exec": [
+      {
+        "where": "checkpoint c (alias kafka-lag from modules/judge-a)",
+        "image": "ghcr.io/acme/kafka-lag@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "secrets": [
+          "broker"
+        ]
+      },
+      {
+        "where": "checkpoint count-judge",
+        "image": "ghcr.io/acme/count@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "secrets": [
+          "extra"
+        ]
+      },
+      {
+        "where": "checkpoint judge-exec",
+        "image": "ghcr.io/acme/judge@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "secrets": [
+          "broker"
+        ]
+      },
+      {
+        "where": "checkpoint lag-ok (alias kafka-lag from modules/judge-a)",
+        "image": "ghcr.io/acme/kafka-lag@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "secrets": [
+          "broker"
+        ]
+      },
+      {
+        "where": "seed exec-seed",
+        "image": "ghcr.io/acme/gen@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "secrets": [
+          "broker",
+          "extra"
+        ]
+      },
+      {
+        "where": "seed orders (alias kafka-orders from modules/judge-a)",
+        "image": "ghcr.io/acme/kafka-orders@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "secrets": []
+      }
+    ],
+    "warnings": []
+  }
+}

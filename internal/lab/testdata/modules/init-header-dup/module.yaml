@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: init-header-dup, version: "1.0", title: Fixture module init-header-dup }
+image: { repository: docker.io/library/nginx, tag: "1.27", digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa }
+readiness: { probe: { port: 80 }, typical: 5s, budget: 30s }
+endpoints: [ { purpose: api, port: 80 } ]
+embed: api-only
+resources: { cpu: 500m, memory: 128MiB }
+init:
+  image: { repository: docker.io/curlimages/curl, tag: 8.21.0, digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc }
+  requests:
+    - method: POST
+      path: /api/setup
+      headers:
+        Content-Type: application/json
+        content-type: text/plain

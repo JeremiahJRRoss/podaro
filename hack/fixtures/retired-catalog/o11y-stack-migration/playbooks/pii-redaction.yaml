@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The negative fixture's playbook (the reconciliation plan's R3): named as the
+# retired template's playbook was, one step judged by one of its checkpoints.
+# Nothing here runs.
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata:
+  name: pii-redaction
+  title: A retired playbook (negative fixture)
+steps:
+  - id: look
+    title: Look
+    body: Nothing here runs.
+    checkpoint: { ref: events-indexed }

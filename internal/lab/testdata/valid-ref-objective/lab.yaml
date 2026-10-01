@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: ref-objective, version: 0.1.0 }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+checkpoints:
+  - id: prom-up
+    adapter: http
+    params: { url: http://prometheus:9090/-/ready }
+    expect: { status: 200 }
+  - id: learner-job
+    class: objective
+    adapter: http
+    params: { url: "http://prometheus:9090/api/v1/label/job/values" }
+    expect: { body_contains: mine }
+    hint: Add a scrape job named mine.

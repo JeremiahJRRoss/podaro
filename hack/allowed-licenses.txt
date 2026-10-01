@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# Dependency license allowlist (ADR-0001 D5): the only licenses that code
+# compiled into the engine may carry. MPL-2.0 is acceptable as file-level
+# copyleft per D5. No GPL or AGPL imports, ever — arm's-length subprocess
+# invocation of GPL-family tools (Podman et al.) is unaffected.
+#
+# Enforced by the `licenses` CI job (.github/workflows/ci.yml) via
+# `go-licenses check`. Documented in CONTRIBUTING.md.
+Apache-2.0
+BSD-2-Clause
+BSD-3-Clause
+ISC
+MIT
+MPL-2.0
+Zlib

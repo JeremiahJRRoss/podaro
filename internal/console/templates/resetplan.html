@@ -1,0 +1,38 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "resetplan"}}<section class="reset-dialog" aria-label="reset impact">
+  <h2 class="section">Reset <span class="mono">{{.Instance}}</span> to baseline</h2>
+  <div class="two-column">
+    <div class="col destroyed">
+      <h3>Destroyed</h3>
+      <ul>{{range .Plan.Destroyed}}<li>{{.}}</li>{{end}}</ul>
+    </div>
+    <div class="col survives">
+      <h3>Survives</h3>
+      <ul>{{range .Plan.Survives}}<li>{{.}}</li>{{end}}</ul>
+    </div>
+  </div>
+  {{/* The reset endpoint answers 202 with the job envelope and has no
+       HTML twin: a fragment may render only what its JSON twin contains
+       (ADR-0003), and this one contains a job. So nothing is swapped —
+       the page stays where it is and the ladder, which is on the feed,
+       narrates the reset as it happens. */}}
+  <form hx-post="/api/v1alpha1/instances/{{.Instance}}/reset" hx-headers='{"X-Podaro-CSRF":"{{.CSRF}}"}' hx-swap="none">
+    <button class="button primary" type="submit" hx-disabled-elt="this">Reset to baseline</button>
+  </form>
+  {{/* Where a refusal lands. `hx-swap="none"` is right for the 202 and
+       threw the failure away with it: this console asks htmx to swap
+       every response, which renders a refusal wherever the control was
+       aiming, and this control aims nowhere. So a reset the engine
+       refused — another exclusive job holds the instance (409,
+       PDR-E201) — re-enabled the button and told the operator nothing,
+       while no ladder event is produced for a reset that never started.
+       The region is the template's,
+       and what lands in it is the server's own error fragment, swapped
+       by htmx after console.js re-aims the failure here: a page whose
+       script never ran shows an empty region rather than a receipt
+       nobody wrote. */}}
+  <div class="action-output" role="alert" aria-live="assertive"></div>
+  <p class="muted note">The ladder below follows the reset as it runs.</p>
+  <p class="muted note">Destroying an instance stays on the command line: <span class="mono">podaro destroy {{.Instance}}</span>.</p>
+</section>
+{{end}}

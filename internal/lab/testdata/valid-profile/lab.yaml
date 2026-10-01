@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# A profile that overrides a module's resource envelope (spec 0003 §8):
+# the module's default is 512MiB, so a plan that shows 2GiB applied it.
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: profile, title: Profile fixture }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+checkpoints:
+  - id: prometheus-ready
+    adapter: http
+    params: { url: http://prometheus:9090/-/ready }
+    expect: { status: 200 }
+profiles:
+  standard:
+    description: a larger envelope than the module's default
+    resources:
+      prometheus: { cpu: "1", memory: 2GiB }

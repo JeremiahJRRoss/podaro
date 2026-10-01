@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+checkpoints:
+  - id: prom-up
+    adapter: http
+    params: { url: http://prometheus:9090 }
+    expect: { status: 200 }
+  - id: prom-up
+    adapter: container
+    params: { service: prometheus }
+    expect: { state: running }

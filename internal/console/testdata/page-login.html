@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="htmx-config" content='{"allowEval":false,"includeIndicatorStyles":false,"selfRequestsOnly":true,"responseHandling":[{"code":".*","swap":true}]}'>
+<title>Sign in · Podaro</title>
+<script src="/assets/theme.js?v=0123456789ab"></script>
+<link rel="stylesheet" href="/assets/console.css?v=0123456789ab">
+<script src="/assets/htmx.min.js?v=0123456789ab" defer></script>
+<script src="/assets/sse.min.js?v=0123456789ab" defer></script>
+<script src="/assets/console.js?v=0123456789ab" defer></script>
+<script src="/assets/alpine-csp.min.js?v=0123456789ab" defer></script>
+</head>
+<body class="doc-page" hx-headers='{"Accept":"text/html"}'>
+<header class="statusbar" role="banner">
+  <a class="brand" href="https://lab.example.com:8443/">Podaro</a>
+  
+  <span class="spacer"></span>
+  
+  <div class="theme" role="group" aria-label="theme" x-data="theme">
+    <button type="button" class="theme-choice" data-theme-choice="system" aria-pressed="false" x-on:click="choose">System</button>
+    <button type="button" class="theme-choice" data-theme-choice="light" aria-pressed="false" x-on:click="choose">Light</button>
+    <button type="button" class="theme-choice" data-theme-choice="dark" aria-pressed="false" x-on:click="choose">Dark</button>
+  </div>
+  
+</header>
+<main id="main" role="main" tabindex="-1">
+<section class="login">
+  <p class="eyebrow">Podaro</p>
+  <h1>Sign in</h1>
+  <form id="login" method="post" action="/api/v1alpha1/auth/session" hx-post="/api/v1alpha1/auth/session" hx-target="#login-error" hx-swap="innerHTML">
+    <label for="username">username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus value="">
+    <label for="password">password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit" class="button primary">Sign in</button>
+  </form>
+  <div id="login-error"></div>
+</section>
+</main>
+<footer role="contentinfo" class="muted"><span class="mono">podaro v0.1.0</span> · <a href="/legal">Licence and source</a></footer>
+</body>
+</html>

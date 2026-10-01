@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata: { name: same, title: Same }
+steps:
+  - id: one
+    title: One
+    body: text
+    checkpoint: { id: d, adapter: attest, params: { prompt: ok }, hint: h }

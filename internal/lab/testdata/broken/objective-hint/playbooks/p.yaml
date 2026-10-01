@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata: { name: p, title: P }
+steps:
+  - id: one
+    title: One
+    body: text
+    checkpoint:
+      id: silent
+      adapter: http
+      params: { url: http://prometheus:9090 }
+      expect: { status: 200 }

@@ -1,0 +1,136 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "rail"}}<section class="rail" aria-label="playbook" data-mode="{{.Mode}}"{{if .Presenter}} data-presenter="true"{{end}}
+  data-instance="{{.Instance}}" data-playbook="{{.PlaybookID}}" data-csrf="{{.CSRF}}" data-progress="{{.ProgressBody}}">
+  {{/* The collapsed rail (UX §6): "a slim progress spine (seven-ish dots)
+       with the current step title". `r` used to set the whole region to
+       `display: none`, which is an absent rail rather than a collapsed
+       one — it took away every trace of where the learner was and left
+       no visible way back. So the spine
+       *is* the way back: a button, rendered always, shown by the
+       stylesheet only when the rail is closed.
+
+       Each dot pairs its colour with the glyph and the word UX §4
+       requires. They are the collapsed rail's only rendering of a
+       verdict, and they were one shape in four colours, hidden from
+       assistive technology — which told a colour-blind reader nothing
+       and a screen reader less, against §9's rule that status is never
+       colour alone (round 23). The glyph is decoration beside the word,
+       which is why only it is hidden.
+
+       And the button carries no `aria-label`: one would *replace* the
+       name its contents compose, so round 23's words were in the page
+       and announced by nothing (round 24). The name is the action, then
+       each step's verdict, then where the learner is — all of it text,
+       all of it kept current by the same code that keeps the visible
+       parts current. */}}
+  <button class="rail-spine" type="button" data-rail-toggle
+    ><span class="sr-only spine-action">Open the playbook rail. </span
+    ><span class="spine-dots">{{range .Steps}}<span class="spine-dot status-{{.Status}}{{if .Current}} current{{end}}"><span class="spine-glyph" aria-hidden="true">{{(.Glyph).Char}}</span><span class="sr-only spine-word">{{.Position}}: {{.StatusWord}}. </span></span>{{end}}</span
+    ><span class="spine-title">{{.SpineLabel}}</span></button>
+  {{/* The kit's section label (treatment 0006 §3, plan S13): the rail
+       says what it is and which mode it is in, above its title. The
+       mode moved up here from the sub-line, which now counts the
+       playbook and nothing else — it was said twice otherwise. */ -}}
+  <header class="rail-head">
+    <p class="eyebrow">Playbook · {{.Mode}}</p>
+    <h2 class="rail-title">{{.Playbook.Title}}</h2>
+    <p class="muted rail-sub"><span class="mono">{{.Playbook.Steps}}</span> steps · <span class="mono">{{.Playbook.Objectives}}</span> objectives</p>
+  </header>
+  <ol class="steps">
+{{range .Steps}}    <li class="step status-{{.Status}}{{if .Current}} current{{end}}" id="step-{{.ID}}" data-step="{{.ID}}"{{if .Checkpoint}} data-checkpoint="{{.Checkpoint.ID}}"{{end}}{{if .Context}} data-context="{{.Context}}"{{end}}{{if .Current}} aria-current="step"{{end}}>
+      {{/* The step's eyebrow: its position, the tab it is about, and —
+           for the presenter only — its advisory pacing. The context tab
+           is printed because the rule that marks such a step is now an
+           ink rule rather than a colour, and a reader is owed the word
+           (UX §9: status and orientation are never colour alone). */ -}}
+      <p class="step-position mono">{{.Position}}{{if .Context}} · {{.Context}}{{end}}{{if .Duration}}{{if $.ShowNotes}} · <span class="pacing">{{.Duration}}</span>{{end}}{{end}}</p>
+      <h3 class="step-title">{{if $.Presenter}}<span id="light-{{.ID}}" class="light light-{{.Light}}" aria-hidden="true">●</span> {{end}}{{.Title}}</h3>
+      <div class="step-body">{{markdown .Body}}</div>
+{{if .Notes}}{{if $.ShowNotes}}      <aside class="notes" aria-label="presenter notes">{{.Notes}}</aside>
+{{end}}{{end}}{{if .Runs}}      <div class="actions">
+        {{/* An auto step is one control, not a shelf of them (spec 0001
+             §8): press it and the engine runs the step's actions and
+             then judges it. The actions are still listed below in
+             Author preview, where seeing them is the point. */}}
+        <button class="button primary run-step" type="button"
+          data-action="{{.AutoAction $.Instance $.Playbook.Name}}" data-result="#result-{{.ID}}"
+          data-actions="{{.ActionList}}" data-instance="{{$.Instance}}" data-csrf="{{$.CSRF}}"
+          data-running-label="Running this step…">Run this step</button>
+        {{/* Where a control says what it did. The per-action controls are
+             suppressed for an auto step, so a credential it reveals has
+             nowhere of its own to land; a standalone seed has nothing to
+             swap at all and its receipt would otherwise be dropped.
+             One region, both branches,
+             and a neutral name — "auto-reveals" stopped being true the
+             moment a plain seed wrote to it. */}}
+        <div class="action-output" aria-live="polite"></div>
+      </div>
+{{end}}{{/* Author preview lists the actions as well as the one control:
+     what that control will do is the point of a preview, and the rail
+     has claimed this since round 3 without doing it (self-review of
+     round 6). */}}{{if .Actions}}{{if or (not .Runs) $.Author}}      <div class="actions">
+{{range .Actions}}{{/* The same handler the one control uses: a seed answers 202
+     when the job is *admitted*, and `hx-swap="none"` threw that away —
+     so pressing an ordinary seed left the button unchanged whether it
+     succeeded, failed or was refused, and a learner had no way to tell
+     the declared action had happened.
+     Its own class, because `run-step` means the one control. */}}{{if .Seed}}        <button class="button primary seed-button" type="button"
+          data-actions="seed:{{.Seed}}" data-instance="{{$.Instance}}" data-csrf="{{$.CSRF}}"
+          data-running-label="Sending…"
+          title="safe to run again">{{.Label}}</button>
+{{end}}{{if .Reveal}}        <button class="button" type="button"
+          hx-post="/api/v1alpha1/instances/{{$.Instance}}/secrets/{{.Reveal}}/reveal"
+          hx-headers='{"X-Podaro-CSRF":"{{$.CSRF}}"}'
+          hx-target="this" hx-swap="outerHTML">{{.Label}}</button>
+{{end}}{{end}}        <div class="action-output" aria-live="polite"></div>
+      </div>
+{{end}}{{end}}{{if .Checkpoint}}      <div class="verify" id="verify-{{.ID}}">
+{{if $.Presenter}}        {{/* Presenter's lights are checkpoints running silently
+             (Manual §3): the light is only worth trusting if it is
+             re-earned, so the region re-runs its checkpoint on a slow
+             timer and shows what came back. A stale green light on stage
+             is the failure this prevents. */}}
+{{if .Rechecks}}        <span class="light-region"
+          hx-post="{{.Action $.Instance $.Playbook.Name}}&amp;mode=presenter"
+          hx-headers='{"X-Podaro-CSRF":"{{$.CSRF}}"}'
+          hx-trigger="load delay:2s, every 20s"
+          hx-target="#result-{{.ID}}" hx-swap="innerHTML"></span>
+{{end}}
+        <p id="quiet-{{.ID}}" class="muted mono verify-quiet">{{.Checkpoint.ID}} · {{.Status}}</p>
+{{else}}{{if .OffersVerify}}        <button class="button verify-button" type="button"
+          hx-post="{{.Action $.Instance $.Playbook.Name}}"
+          hx-headers='{"X-Podaro-CSRF":"{{$.CSRF}}"}'
+          hx-target="#result-{{.ID}}" hx-swap="innerHTML"
+          hx-disabled-elt="this"
+          data-running-label="{{if $.Author}}Testing {{.Checkpoint.ID}}…{{else if .Attest}}Recording your confirmation…{{else}}Verifying — running {{.Checkpoint.ID}}…{{end}}">{{if $.Author}}Test checkpoint{{else if .Attest}}I confirm this{{else}}Verify{{end}}</button>
+{{end}}{{end}}{{/* The id is on this wrapper, and the swap goes *inside* it. A
+     checkpoint request that answers with an error envelope is
+     swapped like any other response — the page shows errors
+     rather than swallowing them — and replacing the result
+     outright took the id with it, leaving the Verify button
+     beside it pointing at nothing: once the transient condition
+     cleared, a reset holding the exclusive slot say, the step
+     could not be retried without reopening the rail.
+*/}}        <div class="result-region" id="result-{{.ID}}">{{template "result" resultLine $.Instance $.Playbook.Name .ID .Result .Checkpoint}}</div>
+      </div>
+{{end}}{{if .Solution}}      <details class="solution"><summary>Show me</summary><div>{{markdown .Solution}}</div></details>
+{{end}}    </li>
+{{end}}  </ol>
+  {{/* The pointer twin of `[` and `]` (UX §9's keyboard map). Until this
+       existed the only code that moved the current step was the key
+       handler, so a mouse or touch user could read every card and never
+       advance the position the instance saves — they worked through the
+       lab while their progress stayed on step one.
+       Both controls route through the same `step(delta)` the
+       keys call, so selection, the context tab, the scroll and the
+       progress write have one implementation, not two.
+
+       Neither is ever disabled: UX §8's Guided row is "soft: red
+       persists, Next stays enabled". At either end of the walk the move
+       is a no-op rather than a dead control. */}}
+  <nav class="step-nav-bar" aria-label="steps">
+    <button class="button step-nav" type="button" data-step-move="-1">← Previous</button>
+    <button class="button step-nav" type="button" data-step-move="1">Next step →</button>
+  </nav>
+</section>
+{{end}}

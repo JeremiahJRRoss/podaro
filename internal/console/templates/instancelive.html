@@ -1,0 +1,28 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{/* The console's live region: one read, every part of the page that one
+     event changes. The ladder is swapped where the request asked; the
+     start-here card and the status bar's rungs come with it as htmx
+     out-of-band swaps, because they say the same things and used to go
+     stale while the ladder moved. */}}
+{{define "instancelive"}}{{template "instance" .Instance}}
+<div id="start-here-region" hx-swap-oob="true">{{template "starthere" .StartHere}}</div>
+<span id="statusbar-ladder" hx-swap-oob="true" class="mono ladder-bar{{if .Instance.Ladder.Regressed}} regressed{{end}}" aria-label="ready ladder{{if .Instance.Ladder.Regressed}}, regressed{{end}}">{{.Instance.Ladder.Condensed}}</span>
+{{/* The announcement travels with the bar: a console that goes amber
+     between reads would otherwise say nothing until a reload.
+     `innerHTML`, not `true`: a live region must already be mounted and
+     observed when its text changes. An `outerHTML` swap replaces the
+     region with a fresh node that arrives with its text already in it,
+     and a node inserted that way is not an update to a live region —
+     many screen readers say nothing, which is the whole feature lost.
+     Swapping only the contents leaves
+     the region, its role and its politeness in place, which is the
+     pattern `result.html` already uses. */}}
+<span id="statusbar-regression" hx-swap-oob="innerHTML">{{if .Instance.Ladder.Regressed}}The ready ladder regressed: this lab was ready and is not now. {{end}}</span>
+<span id="statusbar-label" hx-swap-oob="true" class="mono">{{.Instance.Ladder.Label}}</span>
+{{/* The product tabs carry each service's stage word, and it was
+     rendered once: a console opened while a lab provisions kept saying
+     `creating` after the service was ready.
+     Only the words are swapped, not the strip — replacing the
+     strip would take the learner's selected tab with it. */}}
+{{range .Tabs}}{{if .Word}}<span id="tab-stage-{{.ID}}" hx-swap-oob="true" class="muted mono tab-stage">{{.Word}}</span>
+{{end}}{{end}}{{end}}

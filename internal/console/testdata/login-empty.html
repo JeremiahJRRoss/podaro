@@ -1,0 +1,12 @@
+<section class="login">
+  <p class="eyebrow">Podaro</p>
+  <h1>Sign in</h1>
+  <form id="login" method="post" action="/api/v1alpha1/auth/session" hx-post="/api/v1alpha1/auth/session" hx-target="#login-error" hx-swap="innerHTML">
+    <label for="username">username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus value="">
+    <label for="password">password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit" class="button primary">Sign in</button>
+  </form>
+  <div id="login-error"></div>
+</section>

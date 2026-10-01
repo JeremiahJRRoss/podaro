@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+services:
+  web:
+    image: docker.io/library/nginx@sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609
+checkpoints:
+  - id: typo
+    adapter: attest
+    params:
+      promt: Review the dashboard
+  - id: shaped
+    adapter: attest
+    params:
+      prompt: 7
+  - id: expecting
+    adapter: attest
+    params:
+      prompt: Look at it
+    expect:
+      attested: true

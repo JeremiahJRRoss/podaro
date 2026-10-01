@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/playbook/v1alpha2.json
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha2
+kind: Playbook
+metadata:
+  name: conformance
+  title: Every built-in, once
+  description: >
+    Knock on the sink, deliver events to it, confirm what you saw, and
+    leave with the receipts — each step judged by the system.
+  modes: [guided, presenter]
+  gating: soft
+steps:
+  - id: knock
+    title: Knock on the sink
+    context: sink
+    duration: 1m
+    auto: true
+    body: |
+      Run the step: fifty requests reach the sink. Then verify — the
+      checkpoint reads the sink's own count, not this page.
+    actions:
+      - seed: knock
+    checkpoint:
+      id: knocks-counted
+      adapter: http
+      params: { url: http://sink:8080/_stats }
+      expect: { json_path: { path: "$.requests", op: gte, value: 50 } }
+      hint: >
+        Fewer than fifty requests? Press the seed once more; it is safe
+        to repeat.
+  - id: deliver
+    title: Deliver events
+    context: sink
+    duration: 2m
+    body: |
+      Press the seed: 120 web-server events, newline-delimited JSON,
+      land in the sink. Reveal the admin credential if you want to look
+      at the sink as its operator would. Then verify — the checkpoint
+      asks the sink how many events it holds.
+    actions:
+      - seed: events
+      - reveal: admin
+    checkpoint:
+      id: events-held
+      adapter: http
+      params: { url: http://sink:8080/_stats }
+      expect: { json_path: { path: "$.events", op: gte, value: 120 } }
+      hint: >
+        Fewer than 120 events held? The sink keeps the last 500; press
+        the seed again and verify.
+  - id: confirm
+    title: Confirm what you saw
+    context: overview
+    duration: 1m
+    body: |
+      Say, in your own words, where the events went and how the
+      checkpoint knew. Only you can confirm this — the machine never
+      will, and the report says so.
+    checkpoint:
+      id: routes-understood
+      adapter: attest
+      params: { prompt: I can say where the events went and how the checkpoint knew. }
+      hint: >
+        An attestation is yours to make; nothing verifies it for you.
+  - id: receipts
+    title: Leave with the receipts
+    context: overview
+    duration: 1m
+    body: |
+      Open **Evidence**: every verdict above is a timestamped query
+      against a live service. Then press **Reset** — the baseline
+      re-verifies, the objectives clear, the sink is empty again.
+    checkpoint: { ref: web-answers }

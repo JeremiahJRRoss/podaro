@@ -1,0 +1,122 @@
+<div class="lab" data-instance="pii-lab" x-data="lab" data-rail="open">
+  
+  <aside class="rail-region" aria-label="playbook rail">
+    <button class="button rail-dismiss" type="button" data-rail-toggle
+      ><span class="when-open">Hide</span><span class="when-closed">Show</span></button>
+    <div id="rail">
+<ul class="playbooks">
+  <li class="playbook">
+    <h3>PII Redaction</h3>
+    <p class="muted">Stop social security numbers reaching the index.</p>
+    <p class="mono muted">3 steps · 2 objectives · guided, presenter · gating soft</p>
+    <p class="playbook-actions">
+      <a class="button primary" href="/api/v1alpha1/instances/pii-lab/playbooks/pii-redaction" hx-get="/api/v1alpha1/instances/pii-lab/playbooks/pii-redaction" hx-target="#rail" hx-swap="innerHTML">Open</a>
+      <a class="button" href="/api/v1alpha1/instances/pii-lab/playbooks/pii-redaction?mode=presenter" hx-get="/api/v1alpha1/instances/pii-lab/playbooks/pii-redaction?mode=presenter" hx-target="#rail" hx-swap="innerHTML">Presenter</a>
+    </p>
+  </li>
+</ul>
+
+    </div>
+  </aside>
+  
+  <div class="workspace" id="workspace" tabindex="-1">
+<nav class="tabs" role="tablist" aria-label="lab surfaces" x-data="tabs" x-on:keydown="walk">
+  <button class="tab" role="tab" id="tab-overview" data-tab="overview" data-kind="overview" aria-controls="panel-overview" aria-selected="true" tabindex="0" x-on:click="select">Overview</button>
+  <button class="tab" role="tab" id="tab-beta" data-tab="beta" data-kind="iframe" data-url="https://beta-pii-lab.lab.example.com:8443" aria-controls="panel-beta" aria-selected="false" tabindex="-1" x-on:click="select">beta <span id="tab-stage-beta" class="muted mono tab-stage">ready</span></button>
+  <button class="tab" role="tab" id="tab-gamma" data-tab="gamma" data-kind="newtab" data-url="https://gamma-pii-lab.lab.example.com:8443" aria-controls="panel-gamma" aria-selected="false" tabindex="-1" x-on:click="select">gamma <span id="tab-stage-gamma" class="muted mono tab-stage">ready</span></button>
+  <button class="tab" role="tab" id="tab-evidence" data-tab="evidence" data-kind="evidence" aria-controls="panel-evidence" aria-selected="false" tabindex="-1" x-on:click="select">Evidence</button>
+</nav>
+
+  <div class="panels">
+    <section class="panel panel-overview" role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+      
+      <div id="start-here-region"><aside class="start-here state-provisioning" aria-label="start here">
+  <h2 class="start-headline">Setting up — initializing</h2>
+  <p class="start-body">While you wait: Stop social security numbers reaching the index.</p>
+</aside>
+</div>
+      
+      <div id="ladder-region" aria-live="polite"
+        hx-get="/api/v1alpha1/instances/pii-lab"
+        hx-trigger="sse:ladder from:body, sse:job from:body, sse:checkpoint from:body"
+        hx-swap="innerHTML">
+<section class="ladder" aria-labelledby="ladder-eyebrow">
+  <p class="eyebrow" id="ladder-eyebrow">Ready ladder</p>
+  <h1 class="headline mono"><span class="instance-name">pii-lab</span> · conformance-lab@1.0.0 · <span class="ladder-bar">●●◐○○○○</span> initializing</h1>
+  <table class="ladder-rows mono">
+    <tbody>
+    <tr class="status-ready">
+      <th scope="row">alpha</th>
+      <td><span class="glyph" aria-hidden="true">●</span> healthy</td>
+      <td class="muted">healthy in 38s</td>
+    </tr>
+    <tr class="status-progress">
+      <th scope="row"><a href="https://beta-pii-lab.lab.example.com:8443">beta</a></th>
+      <td><span class="glyph" aria-hidden="true">◐</span> initializing</td>
+      <td class="muted">typically 90s · elapsed 0:41</td>
+    </tr>
+    <tr class="status-pending">
+      <th scope="row">gamma</th>
+      <td><span class="glyph" aria-hidden="true">○</span> creating</td>
+      <td class="muted">waiting for the runtime</td>
+    </tr>
+    <tr>
+      <th scope="row">checkpoints</th>
+      <td colspan="2">baseline 0/8 · objectives 0/4</td>
+    </tr>
+    </tbody>
+  </table>
+</section>
+
+      </div>
+<section class="facts" aria-label="instance facts">
+  <h3 class="section">This lab</h3>
+  <dl class="fact-list mono">
+    <dt>console</dt><dd><a href="https://pii-lab.lab.example.com:8443">https://pii-lab.lab.example.com:8443</a></dd>
+    <dt>template</dt><dd>conformance-lab@1.0.0</dd>
+    <dt>mode</dt><dd>delivery</dd>
+    <dt>created</dt><dd>2026-09-03T10:00:00Z</dd>
+    <dt>beta</dt><dd><a href="https://beta-pii-lab.lab.example.com:8443">https://beta-pii-lab.lab.example.com:8443</a></dd>
+  </dl>
+</section>
+
+      
+      <section class="credentials" aria-label="credentials"
+        hx-get="/api/v1alpha1/instances/pii-lab/secrets"
+        hx-trigger="load once" hx-swap="innerHTML">
+      </section>
+    </section>
+<section class="panel panel-iframe" role="tabpanel" id="panel-beta" aria-labelledby="tab-beta" hidden>
+  <iframe class="product" title="beta" src="https://beta-pii-lab.lab.example.com:8443" loading="lazy" referrerpolicy="no-referrer"></iframe>
+</section>
+<section class="panel panel-newtab" role="tabpanel" id="panel-gamma" aria-labelledby="tab-gamma" hidden>
+  <div class="open-card">
+    <h3>gamma</h3>
+    <p class="muted">This product refuses to be framed; it opens in its own tab.</p>
+    <a class="button primary" href="https://gamma-pii-lab.lab.example.com:8443" target="_blank" rel="noopener noreferrer">Open ↗</a>
+  </div>
+</section>
+
+    
+    <section class="panel panel-evidence" role="tabpanel" id="panel-evidence" aria-labelledby="tab-evidence" hidden
+      hx-get="/api/v1alpha1/instances/pii-lab/checkpoints"
+      hx-trigger="revealed once"
+      hx-swap="innerHTML">
+    </section>
+  </div>
+  
+  <div id="keymap-region" hidden><section class="keymap" aria-label="keyboard map">
+  <h2 class="section">Keyboard</h2>
+  <dl class="keys mono">
+    <dt>[</dt><dd>previous step</dd>
+    <dt>]</dt><dd>next step</dd>
+    <dt>v</dt><dd>verify the current step</dd>
+    <dt>r</dt><dd>toggle the rail</dd>
+    <dt>1–9</dt><dd>switch tab</dd>
+    <dt>← →</dt><dd>move across the tabs (Enter opens)</dd>
+    <dt>?</dt><dd>show this map</dd>
+  </dl>
+</section>
+</div>
+  </div>
+</div>

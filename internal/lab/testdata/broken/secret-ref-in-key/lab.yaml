@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+secrets:
+  token: { kind: token, description: declared correctly }
+services:
+  prometheus: { use: modules/prometheus@3.13 }
+seeds:
+  logs:
+    generator: { exec: { image: docker.io/acme/gen@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa } }
+    count: 1
+    params: { "${secret:token}": value }

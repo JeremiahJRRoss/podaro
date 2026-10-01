@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: file-source, version: 1.0.0, title: Broken fixture, description: template files whose content cannot be resolved }
+services:
+  a:
+    use: modules/prometheus@3.13
+    config:
+      files:
+        - path: /etc/one.yml
+          content: "inline"
+          source: assets/one.yml
+        - path: /etc/two.yml
+          source: ../outside/two.yml
+        - path: /etc/three.yml
+          source: assets/missing.yml

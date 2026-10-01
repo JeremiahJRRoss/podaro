@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://schemas.podaro.dev/playbook/v1alpha1.json
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata:
+  name: already-true
+  title: An objective the template already makes true
+  description: >
+    One step, one objective, and nothing for the learner to earn: the
+    engine flags it at create, which is the point.
+  modes: [guided, presenter]
+  gating: soft
+steps:
+  - id: look
+    title: Look at the page
+    context: web
+    duration: 1m
+    body: |
+      The objective below asks whether the page answers — which it did
+      before you arrived. The engine said so at create: `PDR-W101`, an
+      objective green with no work behind it, is an authoring warning,
+      never an achievement.
+    checkpoint:
+      id: page-answers
+      adapter: http
+      params: { url: http://web:80/index.html }
+      expect: { status: 200 }
+      hint: >
+        The page answers 200 from the start; if it does not, the lab is
+        not the one this fixture describes.

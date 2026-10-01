@@ -1,0 +1,12 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "starthere"}}<aside class="start-here state-{{.State}}" aria-label="start here">
+  <h2 class="start-headline">{{.Headline}}</h2>
+{{if .Body}}  <p class="start-body">{{.Body}}</p>
+{{end}}{{if .Action}}{{if .ActionHRef}}  <a class="button primary" href="{{.ActionHRef}}" hx-get="{{.ActionHRef}}" hx-target="#rail" hx-swap="innerHTML">{{.Action}}</a>
+{{end}}{{end}}{{if .Evidence}}  {{/* The evidence is a tab on this page, so this is the
+       control the status bar uses for it and not an htmx fetch into the
+       rail: the same click handler selects the tab (UX §8's completion
+       line and its evidence link). */}}
+  <a class="button primary" href="#panel-evidence" data-tab-link="evidence">{{.Evidence}}</a>
+{{end}}</aside>
+{{end}}

@@ -1,0 +1,16 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Engine test fixture: a module whose init job runs against the fake
+# runtime's generic personality (every path answers 200).
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: init-web, version: "1.0", title: Fixture module init-web }
+image: { repository: docker.io/library/nginx, tag: "1.28.0", digest: sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609 }
+readiness: { probe: { port: 80 }, typical: 100ms, budget: 10s }
+endpoints: [ { purpose: ui, port: 80 } ]
+embed: iframe
+resources: { cpu: 500m, memory: 128MiB }
+init:
+  image: { repository: docker.io/curlimages/curl, tag: 8.21.0, digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc }
+  requests:
+    - { method: GET, path: /, until: { status: 200 } }
+    - { method: POST, path: /api/setup, headers: { Content-Type: application/json }, body: { theme: dark } }

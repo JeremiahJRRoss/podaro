@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: fixture }
+# The grafana module declares its admin secret as a password.
+secrets:
+  grafana: { kind: token, description: conflicts with the module's password }
+services:
+  grafana: { use: modules/grafana@12.4 }

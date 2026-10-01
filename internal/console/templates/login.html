@@ -1,0 +1,18 @@
+{{/* SPDX-License-Identifier: AGPL-3.0-only */}}
+{{define "login"}}<section class="login">
+  {{/* The kit's eyebrow over the sheet's heading (treatment 0006 §5).
+       It is the product's name as a label, not a wordmark — the build's
+       display name (internal/brand). */ -}}
+  <p class="eyebrow">{{brand}}</p>
+  <h1>Sign in</h1>
+  <form id="login" method="post" action="/api/v1alpha1/auth/session" hx-post="/api/v1alpha1/auth/session" hx-target="#login-error" hx-swap="innerHTML">
+    <label for="username">username</label>
+    <input id="username" name="username" type="text" autocomplete="username" required autofocus value="{{.Username}}">
+    <label for="password">password</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+{{if .Next}}    <input type="hidden" name="next" value="{{.Next}}">
+{{end}}    <button type="submit" class="button primary">Sign in</button>
+  </form>
+  <div id="login-error">{{if .Error}}{{template "error" .Error}}{{end}}</div>
+</section>
+{{end}}

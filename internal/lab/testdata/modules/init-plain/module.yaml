@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: init-plain, version: "1.0", title: Fixture module with an init job }
+image: { repository: docker.io/example/plain, tag: "1.0", digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb }
+readiness: { probe: { port: 8080 }, typical: 5s, budget: 30s }
+endpoints: [ { purpose: api, port: 8080 } ]
+embed: api-only
+resources: { cpu: 250m, memory: 64MiB }
+init:
+  image: { repository: docker.io/curlimages/curl, tag: 8.21.0, digest: sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc }
+  waits_for: healthy
+  requests:
+    - { method: GET, path: /, until: { status: 200 } }
+    - { method: PUT, path: /_setup/default, body: { d: 0 } }

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.podaro.dev/playbook/v1alpha1.json",
+  "$comment": "SPDX-License-Identifier: AGPL-3.0-only · Semantics: docs/specs/0001-playbook-checkpoint-v1alpha1.md · FROZEN v1alpha1: additive changes only. Frozen history: superseded by v1alpha2 on 2026-09-26; documents of this version are read but a retired name in them fails with PDR-E106.",
+  "title": "Podaro Playbook (v1alpha1)",
+  "type": "object",
+  "required": ["apiVersion", "kind", "metadata", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "apiVersion": { "const": "lab.podaro.dev/v1alpha1" },
+    "kind": { "const": "Playbook" },
+    "metadata": {
+      "type": "object",
+      "required": ["name", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "maxLength": 500 },
+        "modes": {
+          "type": "array", "uniqueItems": true, "minItems": 1,
+          "items": { "enum": ["guided", "presenter", "repro"] },
+          "$comment": "Default: all three. Author preview renders any playbook on authoring instances."
+        },
+        "gating": { "enum": ["soft", "strict"], "default": "soft" }
+      }
+    },
+    "steps": {
+      "type": "array", "minItems": 1,
+      "items": { "$ref": "#/$defs/step" }
+    }
+  },
+  "$defs": {
+    "step": {
+      "type": "object",
+      "required": ["id", "title", "body"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 60 },
+        "context": { "type": "string", "default": "overview", "$comment": "A template service name or 'overview'; validated referentially." },
+        "duration": { "$ref": "../checkpoint/v1alpha1.json#/$defs/duration" },
+        "auto": { "type": "boolean", "default": false, "$comment": "Machine-executable. Repro runs auto steps in order; the first non-auto step is the breakpoint." },
+        "body": { "type": "string", "minLength": 1 },
+        "notes": { "type": "string", "$comment": "Presenter-only speaker notes." },
+        "actions": {
+          "type": "array", "maxItems": 8,
+          "items": {
+            "oneOf": [
+              { "type": "object", "required": ["seed"],   "additionalProperties": false, "properties": { "seed":   { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" } } },
+              { "type": "object", "required": ["reveal"], "additionalProperties": false, "properties": { "reveal": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" } } }
+            ],
+            "$comment": "'probe' (workbench) reserved for P2; lands additively."
+          }
+        },
+        "checkpoint": {
+          "oneOf": [
+            { "$ref": "../checkpoint/v1alpha1.json" },
+            { "type": "object", "required": ["ref"], "additionalProperties": false,
+              "properties": { "ref": { "$ref": "../checkpoint/v1alpha1.json#/$defs/dnsLabel" } } }
+          ]
+        },
+        "solution": { "type": "string", "$comment": "Optional 'Show me' disclosure for stuck learners." }
+      }
+    }
+  }
+}

@@ -1,0 +1,166 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# CI: build, vet and test; the dependency-licence allowlist, every tracked
+# file's licence, the third-party notices held to their sources; JSON-Schema
+# self-validation, the link check and the scenarios' YAML; the lab gate on
+# every catalog template; the scripted acceptance runs against the fake
+# runtime, the exec conformance fixture under Podman, the console walked in
+# a real browser, the legal surfaces, the rebrand, the installer and the
+# build script; the release packaging, built twice and compared; and the
+# retirement and identity guards, a job each, over the tree, the binary and
+# the release for every architecture it ships.
+# Job names are load-bearing: they are the required status checks recorded
+# in the branch ruleset. Actions are pinned by commit SHA.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']   # the release commit is verified as every other one (INSTALL §2 step 1)
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go test ./...
+      - run: hack/interrupt_test.sh   # the runtime core against the fake runtime: kill -9 mid-create then resume, reboot then reconcile, create-twice identity, destroy-leaves-nothing
+      - run: hack/gateway_test.sh     # the curl matrix against the real gateway
+      - run: hack/ready_test.sh       # up → ready, verify, seed, evidence, reset, secret-leak scan
+      - run: hack/exec_conformance.sh # the exec contract's fixture under rootless Podman (skips honestly without it)
+      - run: hack/console_walk.sh     # the console walked in Chromium (skips honestly without one); it dumps every page's text too
+      - run: hack/license_gate_test.sh # the licence gate on a first-party fixture — refused, accepted by id, recorded once
+      - run: hack/w101_test.sh         # PDR-W101 on a first-party fixture — flagged at create, counted, in evidence, again after reset
+      - run: hack/conformance_lab.sh   # every built-in adapter and generator the platform keeps, once, on vendor-neutral services
+      - run: hack/attendee_matrix.sh  # an attendee link opens one lab and nothing else
+      - run: hack/observe_export.sh   # the observability export against a mock collector and HEC
+      - run: hack/upgrade_test.sh     # system upgrade against a real release mirror laid out at the destination's path, and with no --from the default location answered locally over TLS
+      - run: hack/retirement_migration_test.sh # what an earlier build left of the retired lab — kept, never offered, reconciled or run, reported, removed only by destroy
+      - run: hack/legal_surfaces_test.sh # the release's tarball and bare binary carry the licence, the notices and the source offer; /legal and GET /system/legal answer a visitor and an attendee
+      - run: hack/rebrand_test.sh        # a neutral-name build moves the display name and nothing else — not the licence, the notices, the source offer or any identifier
+      - run: hack/install_sh_test.sh  # the installer: shellcheck, its answers, its refusals (the host stage needs a VM)
+      - run: hack/build_sh_test.sh    # build.sh: --check, a zip's --quick and packaged builds, its refusals (installing Go and --install need a VM)
+      - run: hack/podaroctl_test.sh   # podaroctl: --help, --print, its refusals (running it for real needs the account: the VM)
+      - name: Release artifacts build reproducibly
+        # The version comes from VERSION, so this runs on the release
+        # commit as it runs on every other one: the binary and the tarball
+        # are built twice and compared, which is the verification path
+        # INSTALL §2 step 1 offers in place of signing.
+        run: hack/release_package.sh "$(tr -d '[:space:]' <VERSION)"
+
+  licenses:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+      - name: Install go-licenses
+        run: go install github.com/google/go-licenses@v1.6.0
+      - name: Check imports against hack/allowed-licenses.txt
+        # confidence_threshold 0.85: modernc.org/mathutil (a SQLite
+        # dependency) carries a BSD license whose preamble the classifier
+        # scores just under the 0.9 default; at 0.85 it reads as
+        # BSD-2-Clause, which is on the allowlist. Nothing is ignored.
+        run: |
+          allowed="$(grep -Ev '^[[:space:]]*(#|$)' hack/allowed-licenses.txt | paste -sd, -)"
+          go-licenses check ./... \
+            --allowed_licenses="${allowed}" \
+            --confidence_threshold=0.85 \
+            --ignore github.com/jeremiahjrross/podaro
+      - name: THIRD-PARTY-NOTICES.md is what its sources give
+        # Regenerated from go-licenses report for both release architectures,
+        # console/VENDOR.md, the vendored assets' licence texts and NOTICE's
+        # third-party block; a stale copy fails, with the difference shown.
+        run: hack/third_party_notices.sh --check
+      - name: Every tracked file's licence
+        # First-party files AGPL-3.0-only with no copyright line, by their own
+        # SPDX header or REUSE.toml; third-party files exactly their known
+        # identifiers; no copyright line names the owner outside NOTICE's
+        # qualified statement. Standard library only.
+        run: python3 hack/spdx_check.py
+      - name: The SPDX check fails where it must (its probes, on a throwaway copy of the tree)
+        # The probes echo the check's failure lines on purpose; setup-go's Go
+        # problem matcher would read one such as "✗ version.go: first-party, …"
+        # as an error annotation on a job that passed, so this step, the job's
+        # last, removes the matcher first.
+        run: |
+          echo "::remove-matcher owner=go::"
+          hack/spdx_check_test.sh
+
+  schemas:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: python3 -m pip install --quiet jsonschema==4.26.0
+      - run: python3 hack/validate_schemas.py
+      - run: python3 hack/link_check.py        # every relative link resolves, every absolute one is well formed (offline, form only), and the repository's URLs and module path are spelled as SOURCE and go.mod spell them
+      - run: hack/link_check_test.sh           # the link check fails where it must (its probes, on a throwaway copy of the tree)
+
+  scenarios-yaml:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - run: python3 -m pip install --quiet pyyaml==6.0.2
+      - run: python3 hack/validate_scenarios.py
+
+  templates:
+    # The lab gate: lab validate + lab plan green and deterministic on every
+    # catalog template, from the binary alone.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+      - run: hack/lab_gate.sh
+
+  retirement:
+    # Nothing retired before the release comes back — not in the tree,
+    # where a match must be a row of hack/retirement_allow.txt by the
+    # file's role, and never in a maintained surface; not in the embedded
+    # filesystem, the binaries or the release built from this commit for
+    # every architecture it ships, where the manifest's in_a_binary
+    # allowance (hack/retirement_scan.py) and its self-test judge the
+    # bytes. Then the guard's probes: it fails where it must.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+      - run: hack/retirement_guard.sh
+      - name: The retirement guard fails where it must (its probes, on a throwaway copy of the tree)
+        # The probes echo the guard's failure lines on purpose, which name Go
+        # files and lines; the matcher goes first, as in the licenses job.
+        run: |
+          echo "::remove-matcher owner=go::"
+          hack/retirement_guard_test.sh
+
+  identity:
+    # No former project identity anywhere a person meets the project: the
+    # tree, every architecture's binary and release, the CLI's output for
+    # every command and the rendered console, which the walk dumps
+    # (required here: a skipped walk fails the job). The detectors are the
+    # hashes in hack/identity_detectors.txt, never a spelling, and none may
+    # stand outside a third-party credit. Then the guard's probes.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+      - run: hack/identity_guard.sh --require-walk
+      - name: The identity guard fails where it must (its probes, on a throwaway copy of the tree)
+        run: |
+          echo "::remove-matcher owner=go::"
+          hack/identity_guard_test.sh

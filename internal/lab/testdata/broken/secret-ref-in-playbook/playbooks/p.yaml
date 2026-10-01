@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Playbook
+metadata: { name: p, title: "P ${secret:token}" }
+steps:
+  - id: one
+    title: One
+    body: text
+    checkpoint: { id: c1, adapter: http, params: { url: "http://prometheus:9090/${secret:token}" },
+                  expect: { status: 200, body_contains: "${secret:token}" },
+                  hint: "use ${secret:token}",
+                  evidence: { capture: ["${secret:token}"] } }

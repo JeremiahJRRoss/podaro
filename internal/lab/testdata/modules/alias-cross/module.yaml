@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: alias-cross, version: "1.0", title: Fixture module alias-cross }
+image: { repository: docker.io/library/nginx, tag: "1.27", digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa }
+readiness: { probe: { port: 80 }, typical: 5s, budget: 30s }
+endpoints: [ { purpose: ui, port: 80 } ]
+embed: iframe
+resources: { cpu: 500m, memory: 128MiB }
+adapters:
+  - { name: both, exec: { image: ghcr.io/acme/one@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb } }
+generators:
+  - { name: both, exec: { image: ghcr.io/acme/two@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc } }
+  - { name: http, exec: { image: ghcr.io/acme/three@sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd } }

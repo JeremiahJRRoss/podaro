@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Engine test fixture: a module that ships a judge alias — an exec adapter
+# the fake runtime runs as the conformance fixture (first argument: pass).
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Module
+metadata: { name: alias-judge, version: "1.0", title: Fixture module alias-judge }
+image: { repository: docker.io/library/nginx, tag: "1.28.0", digest: sha256:552e7481ca93ffccd046aa658dbbed22caefbc09c66fa7cd247cbb90b8a5c609 }
+readiness: { probe: { port: 80 }, typical: 100ms, budget: 10s }
+endpoints: [ { purpose: ui, port: 80 } ]
+embed: iframe
+resources: { cpu: 500m, memory: 128MiB }
+adapters:
+  - { name: lag-judge, exec: { image: docker.io/podaro/exec-conformance@sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee, args: [pass] } }

@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata: { name: aliases, version: 0.1.0, title: Alias fixture }
+services:
+  kafka: { use: modules/judge-a@1.0 }
+  custom:
+    image: docker.io/library/nginx@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+    endpoints: [ { purpose: ui, port: 80 } ]
+    embed: newtab
+    eula: { id: custom-terms, name: Custom Terms, url: https://example.com/terms }
+licenses: [custom-terms]
+secrets:
+  extra: { kind: uuid, description: template-declared }
+seeds:
+  orders: { generator: kafka-orders, count: 5 }
+  exec-seed: { generator: { exec: { image: ghcr.io/acme/gen@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, secrets: [extra, broker] } } }
+checkpoints:
+  - id: lag-ok
+    adapter: kafka-lag
+    expect: { max: 10 }
+  - id: judge-exec
+    adapter: exec
+    params: { image: ghcr.io/acme/judge@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb, secrets: [broker] }
+    expect: { ok: true }
+  - id: count-judge
+    adapter: exec
+    params: { image: ghcr.io/acme/count@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc, secrets: [extra] }

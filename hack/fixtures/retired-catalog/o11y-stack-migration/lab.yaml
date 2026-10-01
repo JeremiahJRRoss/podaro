@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# A negative fixture (the reconciliation plan's R3; the reconciliation §4.2):
+# the template the owner retired on 2026-09-23, as an earlier build left it in
+# <state>/catalog/, carrying the identifiers the retirement manifest records so
+# that hack/retirement_migration_test.sh can prove nothing offers, validates,
+# recreates or repairs it: its own name, the modules, the adapters, a composite,
+# the generators, and its playbook's name. It provisions nothing — no config, no
+# init requests, no assets — and the one image it names is pinned to an all-zero
+# digest no registry serves. It must never validate: every retired name in it
+# fails with PDR-E106, and nothing else does. (It declares no licences: with its
+# modules refused, a licence list could only fail as a composition mismatch.)
+apiVersion: lab.podaro.dev/v1alpha1
+kind: Template
+metadata:
+  name: o11y-stack-migration
+  version: 1.0.0
+  title: A retired template (negative fixture)
+  description: Nothing here runs.
+services:
+  index: { use: modules/elasticsearch@8.17 }
+  explore: { use: modules/kibana@8.17 }
+  search: { use: modules/splunk@9.4 }
+  leader: { use: modules/cribl-leader@4.19 }
+  worker: { use: modules/cribl-worker@4.19 }
+  collector:
+    image: docker.io/splunk/splunk@sha256:0000000000000000000000000000000000000000000000000000000000000000
+seeds:
+  pii: { generator: pii-events, count: 1 }
+  firewall: { generator: firewall-heavy, count: 1 }
+checkpoints:
+  - id: events-indexed
+    adapter: elastic-query
+    expect: { min: 1 }
+  - id: events-searched
+    adapter: splunk-search
+    expect: { min: 1 }
+  - id: pipeline-routed
+    adapter: cribl-api
+    expect: { status: 200 }
+  - id: counts-agree
+    adapter: count-parity
+    expect: { min: 1 }
+profiles:
+  standard:
+    description: an earlier build's copy of a retired template

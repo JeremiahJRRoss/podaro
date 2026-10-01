@@ -1,0 +1,652 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* Podaro console — UX Guide §4 tokens, one grammar, two renderers. Fonts
+   and scripts are vendored (console/VENDOR.md); nothing here reaches the
+   network. Chromatic color means status; actions are ink. */
+
+/* Each font URL carries the first twelve hex characters of the font's
+   pinned digest (console/VENDOR.md; embed_test.go enforces it): assets
+   are cached for a day, the stylesheet's own key cannot reach into its
+   subresources, and a font upgraded under the same name would otherwise
+   serve old bytes for a day. */
+/* Three faces (UX §4, plan S13): Poppins 600 for display, Inter for
+   reading and UI, IBM Plex Mono for the status grammar. Plex Sans is
+   retired; Plex Mono stays, because the mono is load-bearing — it marks
+   machine-verified content and its glyph set must render identically on
+   every machine, which a system mono does not promise (treatment 0006
+   §3, D1). Latin subsets only, as before. */
+@font-face { font-family: "Poppins"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/poppins-latin-600-normal.woff2?v=f4e80d9dfd37") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/inter-latin-400-normal.woff2?v=8909904ab6c8") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/inter-latin-500-normal.woff2?v=f3779f1efccc") format("woff2"); }
+@font-face { font-family: "Inter"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/inter-latin-600-normal.woff2?v=f9a06e79cd3a") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 400; font-style: normal; font-display: swap; src: url("fonts/IBMPlexMono-Regular-Latin1.woff2?v=e8993d946649") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 500; font-style: normal; font-display: swap; src: url("fonts/IBMPlexMono-Medium-Latin1.woff2?v=41201b658a32") format("woff2"); }
+@font-face { font-family: "IBM Plex Mono"; font-weight: 600; font-style: normal; font-display: swap; src: url("fonts/IBMPlexMono-SemiBold-Latin1.woff2?v=b7acd05041ab") format("woff2"); }
+
+/* Themes (UX §4, plan S12). Three columns of values, one meaning:
+   `:root` is the light column; `:root[data-theme="dark"]` is a stored
+   choice of dark; the media block is the OS's preference when nothing
+   is stored — a stored choice wins, System follows the OS. The dark
+   column is named once (`--dark-*`, `--status-*-dark`) so the two dark
+   blocks and the plate below say the same values. */
+:root {
+  color-scheme: light;
+  /* The status semantics — the light column. Chromatic colour is
+     status and nothing else; every pair clears WCAG AA on its theme. */
+  --status-ready: #1D7A46;
+  --status-progress: #1C64D9;
+  --status-pending: #5f5f57;
+  --status-warn: #9A6700;
+  --status-fail: #C0342B;
+  --status-attest: #6F42C1;
+  /* The dark column: the dark theme wears it everywhere, and the status
+     bar wears it in either theme, because the plate is dark in both. */
+  --status-ready-dark: #4CC38A;
+  --status-progress-dark: #5C9EFF;
+  --status-pending-dark: #9f9f96;
+  --status-warn-dark: #E3A008;
+  --status-fail-dark: #F0655B;
+  --status-attest-dark: #B392F0;
+  /* The neutral ramp, warm (treatment 0006 §3): paper, surface, ink,
+     muted, rule — and the one plate, the same in both themes.
+     --status-pending is the theme's muted: "not yet reached" is a quiet
+     fact, and the grey it replaced measured 4.47:1 on paper. */
+  --bg: #fcfcfa;
+  --surface: #ffffff;
+  --ink: #1d1d1a;
+  --muted: #5f5f57;
+  --border: #d8d8d1;
+  --plate: #11110f;
+  --on-plate: #fcfcfa;
+  /* The primary action is the plate (treatment 0006 §3): the plate's
+     own pair in light, and the inverted ink pair in dark, where the
+     plate is the ground and a button made of it would disappear. */
+  --primary-fill: var(--plate);
+  --on-primary: var(--on-plate);
+  --on-plate-muted: #c1c1b9;
+  --plate-seam: var(--plate);
+  --dark-bg: #11110f;
+  --dark-surface: #1d1d1a;
+  --dark-ink: #e5e5df;
+  --dark-muted: #9f9f96;
+  --dark-border: #45453f;
+  --display: "Poppins", "Montserrat", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+  --sans: "Inter", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  /* Rules, not boxes (treatment 0006 §3): a record is square and a
+     control is 4 px. The two radii are named so the rule is one place,
+     not thirty. */
+  --radius-record: 0;
+  --radius-control: 4px;
+  /* The surface uses the browser (UX §10, plan S11): a 2.5vw gutter each
+     side — 95vw of surface, never less than 16px of gutter — and the
+     rail as the left column, one formula across the desktop range. */
+  --gutter: max(2.5vw, 16px);
+  --rail-w: clamp(22rem, 26vw, 30rem);
+}
+/* Dark, chosen: the page is on the plate's ground and the seam under the
+   status bar is a rule, not a colour. Two blocks with one body each,
+   because a media query cannot join a selector list. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: var(--dark-bg); --surface: var(--dark-surface); --ink: var(--dark-ink);
+  --muted: var(--dark-muted); --border: var(--dark-border); --plate-seam: var(--border);
+  --primary-fill: var(--dark-ink); --on-primary: var(--dark-bg);
+  --status-ready: var(--status-ready-dark); --status-progress: var(--status-progress-dark);
+  --status-pending: var(--status-pending-dark); --status-warn: var(--status-warn-dark);
+  --status-fail: var(--status-fail-dark); --status-attest: var(--status-attest-dark);
+}
+/* Dark, the OS's preference, when nothing is stored. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: var(--dark-bg); --surface: var(--dark-surface); --ink: var(--dark-ink);
+    --muted: var(--dark-muted); --border: var(--dark-border); --plate-seam: var(--border);
+    --primary-fill: var(--dark-ink); --on-primary: var(--dark-bg);
+    --status-ready: var(--status-ready-dark); --status-progress: var(--status-progress-dark);
+    --status-pending: var(--status-pending-dark); --status-warn: var(--status-warn-dark);
+    --status-fail: var(--status-fail-dark); --status-attest: var(--status-attest-dark);
+  }
+}
+
+* { box-sizing: border-box; }
+html { font-size: 16px; }
+body {
+  margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+  font-family: var(--sans); font-size: 1rem; line-height: 1.5; font-weight: 400;
+  color: var(--ink); background: var(--bg);
+}
+a { color: var(--ink); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, .mono { font-family: var(--mono); font-size: 0.875rem; }
+/* Display is Poppins 600, tracked in (treatment 0006 §3): the instance
+   name in the bar, the rail's title, a page heading, a step's title —
+   the names of things, never their content. */
+h1, h2, h3, .display { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
+h1 { font-size: 2rem; margin: 0 0 1rem; }
+h1.headline { font-size: 1.5rem; }
+h2 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+h3 { font-size: 1.125rem; margin: 0 0 0.5rem; }
+.muted { color: var(--muted); }
+/* An eyebrow is the kit's section label: uppercase, tracked, small and
+   bold, in muted ink. The stylesheet applies it — `.section` headings
+   and every table's header row are eyebrows wherever they stand, so no
+   template has to remember to ask. */
+.eyebrow, .section, thead th {
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted);
+  margin: 0; line-height: 1.4;
+}
+/* The kit's ring, Podaro's token (treatment 0006 §3; UX §9). */
+:focus-visible { outline: 3px solid var(--status-progress); outline-offset: 4px; }
+/* The first tab stop on every page (UX §9): off-canvas until focused —
+   never `display: none`, which a keyboard cannot reach — and styled
+   here, never inline (CSP `style-src 'self'`). */
+.skip-link {
+  position: fixed; top: -100px; left: var(--gutter); z-index: 100;
+  padding: 0.5rem 0.75rem; background: var(--bg); color: var(--ink);
+  border: 1px solid var(--ink); border-radius: var(--radius-control); font-size: 0.875rem;
+}
+.skip-link:focus { top: 0.75rem; }
+
+/* status bar */
+/* The status bar is the sheet's one dark plate (treatment 0006 §3–§4,
+   plan S12): the same plate in both themes, so what sits on it — the
+   ladder, the chip, the actions — takes the dark column of the status
+   set whatever the page wears. In dark the plate is also the ground,
+   and the seam is a rule. */
+.statusbar {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem var(--gutter);
+  background: var(--plate); color: var(--on-plate);
+  border-bottom: 1px solid var(--plate-seam);
+  --status-ready: var(--status-ready-dark); --status-progress: var(--status-progress-dark);
+  --status-pending: var(--status-pending-dark); --status-warn: var(--status-warn-dark);
+  --status-fail: var(--status-fail-dark); --status-attest: var(--status-attest-dark);
+}
+.statusbar a { color: var(--on-plate); }
+.statusbar .brand { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; }
+.statusbar .spacer { flex: 1; }
+.statusbar .who { font-size: 0.875rem; color: var(--on-plate-muted); }
+.statusbar .button { border-color: var(--on-plate); color: var(--on-plate); background: transparent; }
+.statusbar .chip { color: var(--on-plate-muted); border-color: var(--on-plate-muted); }
+/* The theme control (UX §6): three text buttons, System · Light · Dark,
+   the pressed one solid — the kit's filter bar, on the plate. Words,
+   not icons; `aria-pressed` carries the state. */
+.theme { display: inline-flex; gap: 0.25rem; }
+.theme-choice {
+  font: inherit; font-size: 0.8125rem; padding: 0.2rem 0.6rem; cursor: pointer;
+  border: 1px solid var(--on-plate-muted); border-radius: var(--radius-control); background: transparent; color: var(--on-plate);
+}
+.theme-choice[aria-pressed="true"] { background: var(--on-plate); color: var(--plate); border-color: var(--on-plate); }
+/* The instance name stays in the status grammar's face: it is what a
+   person types after `podaro up` and what stands in the lab's
+   hostnames — machine-addressable content, which UX §4 reserves the
+   mono for, and treatment 0006 §5 sets "instance name and ladder in
+   mono on paper". The plan's task 2 had put it in the display face;
+   the drawing and the rule agree against it, and the markup already
+   said `class="mono instance-name"`. */
+.instance-name { font-weight: 600; }
+.ladder-bar { letter-spacing: 0.1em; }
+/* A ladder that has fallen from ready wears the warn token (UX §5).
+   One rule serves every place the bar is drawn: inside the status bar
+   `--status-warn` is already the plate's column (the block above sets
+   it), and on the instance page and the list it is the page's — so the
+   contrast S12 measured on both grounds holds without a second rule.
+   The colour is never the only carrier: the accessible name says it,
+   and the region beside the bar announces it (plan S14). */
+.ladder-bar.regressed { color: var(--status-warn); }
+.chip {
+  display: inline-block; padding: 0 0.4em; border: 1px solid var(--border); border-radius: var(--radius-control);
+  color: var(--muted); font-size: 0.75rem;
+}
+
+/* The lab page is a viewport-tall shell (UX §10, plan S11): the page
+   itself never scrolls; the rail and the workspace are their own scroll
+   containers, which is what lets a product panel be as tall as the
+   window. Document pages — the instance list, sign-in — keep flowing
+   and scroll as pages do. There is no maximum width: the surface is
+   the browser's. */
+/* The minimum is restated in the same unit: `body`'s `min-height: 100vh`
+   would otherwise win over a `100dvh` height on a mobile browser whose
+   chrome is showing, where the dynamic viewport is the shorter one, and
+   push the foot of the shell below what is visible.
+   Each pair is a `vh` fallback and then the `dvh` value. */
+body.lab-page { min-height: 100vh; min-height: 100dvh; height: 100vh; height: 100dvh; }
+main { flex: 1; padding: 1.5rem var(--gutter); width: 100%; }
+body.lab-page main { display: flex; flex-direction: column; min-height: 0; overflow: hidden; padding: 1rem var(--gutter); }
+/* The skip link's targets are regions, not controls: focus lands there
+   to start sequential navigation from, and a ring around a whole region
+   says nothing — UX §9's rings are for controls. */
+main:focus, .workspace:focus { outline: none; }
+/* The bar and the footer share the surface's gutter, so the chrome and
+   the columns start on one line. */
+footer { padding: 0.5rem var(--gutter); border-top: 1px solid var(--border); font-size: 0.75rem; }
+
+/* buttons: achromatic ink (UX §4 — a colored pixel always means status).
+   The primary action is the plate: an ink fill with inverse text, which
+   in dark inverts to paper on ink (treatment 0006 §3). 4 px radius; the
+   learner's controls are 44 px tall and the chrome's are 36 px — the
+   kit's own two sizes, and WCAG's target floor where a learner acts.
+   Hover changes opacity or underline, with no transition: the ladder
+   keeps its place as the product's one motion. */
+.button {
+  font: inherit; font-size: 0.9375rem; font-weight: 500;
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  min-height: 2.25rem; padding: 0.35rem 0.9rem;
+  border: 1px solid var(--ink); border-radius: var(--radius-control);
+  background: transparent; color: var(--ink); cursor: pointer; transition: none;
+}
+.button:hover { opacity: 0.88; text-decoration: none; }
+.button.primary { background: var(--primary-fill); color: var(--on-primary); border-color: var(--primary-fill); }
+.button:disabled { opacity: 0.6; cursor: not-allowed; }
+/* Where the learner acts, the control is 44 px (treatment 0006 §3). */
+.rail .button, .start-here .button { min-height: 2.75rem; padding: 0.5rem 1rem; }
+form.inline { display: inline; margin: 0; }
+
+/* empty state (UX §6): names the action that fills it. The kit's dashed
+   box — a space waiting for content, not a card. */
+.empty { border: 1px dashed var(--muted); border-radius: var(--radius-record); padding: 1.5rem; }
+.empty p { margin: 0; font-size: 1.125rem; }
+
+/* tables */
+/* Tables carry the kit's ruled header: eyebrow labels over a 2 px ink
+   rule, rows on 1 px rules. */
+table { border-collapse: collapse; width: 100%; }
+th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th { border-bottom: 2px solid var(--ink); padding-bottom: 0.35rem; }
+/* The ready ladder is a table with no header row — its columns are the
+   service, its stage and one clause of context, and naming them would
+   say less than the rows do. So its boundary is under the headline,
+   with the eyebrow above it, which is what treatment 0006 §5 draws
+   (the `thead th` rule could never reach it).
+*/
+.ladder h1.headline { border-bottom: 2px solid var(--ink); padding-bottom: 0.5rem; margin-bottom: 0.75rem; }
+.ladder-rows th { font-weight: 400; width: 12rem; }
+.ladder-rows td:nth-child(2) { width: 12rem; white-space: nowrap; }
+.status-ready .glyph { color: var(--status-ready); }
+.status-progress .glyph { color: var(--status-progress); }
+.status-pending .glyph { color: var(--status-pending); }
+.status-warn .glyph { color: var(--status-warn); }
+.status-fail .glyph { color: var(--status-fail); }
+.status-attest .glyph { color: var(--status-attest); }
+
+/* facts */
+/* Document metadata (treatment 0006 §5): the label is an eyebrow above
+   its value, not a column beside it. The pairs flow in columns, and
+   `break-after: avoid` is what keeps a label with the value it names —
+   plain `dt`/`dd` markup, no wrapper element, no template change. */
+dl.facts, .fact-list { display: block; margin: 0; columns: 2; column-gap: 2.5rem; }
+dl.facts dt, .fact-list dt {
+  font-family: var(--sans); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--muted); break-after: avoid;
+}
+dl.facts dd, .fact-list dd { margin: 0.15rem 0 0.9rem; break-before: avoid; break-inside: avoid; }
+
+/* login — a centred sheet: eyebrow, the heading in display, ruled
+   fields, the plate button (treatment 0006 §5) */
+.login { max-width: 22rem; margin: 3rem auto; }
+.login form { display: flex; flex-direction: column; gap: 0.35rem; }
+.login label {
+  font-size: 0.72rem; font-weight: 600; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--muted); margin-top: 1rem;
+}
+.login input {
+  font: inherit; min-height: 2.75rem; padding: 0.45rem 0.6rem;
+  border: 1px solid var(--border); border-radius: var(--radius-control);
+  background: var(--surface); color: var(--ink);
+}
+.login .button { margin-top: 1.5rem; align-self: flex-start; min-height: 2.75rem; padding: 0.5rem 1.25rem; }
+
+/* legal — the licence, the notices and the source offer (/legal): one
+   column of facts, the statements read as sentences, the component table
+   below them. Links are the page's ink, underlined, like every link. */
+.legal { max-width: 56rem; }
+.legal dl.facts { columns: 1; margin-bottom: 1.5rem; }
+.legal h2 { margin-top: 0.5rem; }
+.legal .third-party td { font-size: 0.875rem; }
+.legal .third-party td:nth-child(3) { white-space: nowrap; }
+
+/* error panel (UX §6): code · headline · cause · evidence · next */
+.error-panel {
+  margin-top: 1rem; padding: 0.75rem 1rem; border: none; border-radius: var(--radius-record);
+  border-left: 3px solid var(--status-fail); background: var(--surface);
+}
+.error-panel p { margin: 0.2rem 0; }
+.error-panel .error-code .glyph { color: var(--status-fail); }
+.error-panel .label { display: inline-block; width: 5.5rem; color: var(--muted); font-family: var(--mono); font-size: 0.875rem; }
+
+/* htmx request indicator without injected styles (CSP: style-src 'self') */
+.htmx-indicator { opacity: 0; }
+.htmx-request .htmx-indicator, .htmx-request.htmx-indicator { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (max-width: 768px) {
+  .statusbar { flex-wrap: wrap; }
+  .ladder-rows th { width: auto; }
+}
+
+/* ---------------------------------------------------------------- S7 --
+   The lab surface: start-here card, tabs, playbook rail, evidence
+   scoreboard, credentials, reset dialog. UX Guide §4 (colour is status,
+   actions are ink), §6 (each component's written anatomy), §9 (focus
+   rings, no colour-only status), §10 (desktop first, drawer under
+   1200px, honest degradation under 768px). Chromatic colour appears
+   only where a status does. */
+
+/* Two columns, the rail first (treatment 0006 §1–§2): the rail at
+   --rail-w, the workspace taking the rest, both filling the shell's
+   height and each scrolling on its own. */
+.lab {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: var(--rail-w) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  column-gap: 2rem; align-items: stretch;
+}
+.workspace { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+
+/* start-here card — exactly one per Overview, always present (UX §6).
+   A square record under a 2 px ink rule (treatment 0006 §5): the state
+   is carried by its word and glyph inside the card, which is where §9
+   wants it, and no longer by a coloured border. */
+.start-here {
+  border: none; border-top: 2px solid var(--ink); border-radius: var(--radius-record);
+  padding: 1.25rem 0 1.5rem; margin-bottom: 1.5rem;
+}
+.start-here .start-headline { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.25rem; margin: 0 0 0.35rem; }
+.start-here .start-body { margin: 0 0 1rem; max-width: 68ch; color: var(--muted); }
+
+/* tabs — Overview first, Evidence last, products between (UX §6) */
+/* The kit's primary nav: text tabs, a 2 px ink rule under the selected
+   one, no box at all (treatment 0006 §5). The strip's own 1 px rule is
+   the organising line; the tab's underline overlaps it, which is why
+   the tab carries a negative bottom margin. 44 px tall. */
+.tabs { flex: none; display: flex; gap: 1.5rem; border-bottom: 1px solid var(--border); overflow-x: auto; }
+.tab {
+  font: inherit; font-size: 0.9375rem; color: var(--ink); background: none;
+  border: none; border-bottom: 2px solid transparent; border-radius: 0; margin-bottom: -1px;
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  min-height: 2.75rem; padding: 0 0.125rem; cursor: pointer; white-space: nowrap;
+}
+.tab[aria-selected="true"] { border-bottom-color: var(--ink); font-weight: 600; background: none; }
+/* `overflow-x: auto` makes the strip a scrollport in both axes, and a
+   scrollport clips what leaves it — including a focus ring 7 px outside
+   its control. Giving the strip room
+   would lift the selected tab's rule off the strip's own, which is the
+   whole shape of a primary nav, so the ring goes inside the tab
+   instead: on a 44 px control an inset ring is unmistakable, and it
+   cannot be clipped by anything. UX §9 records the exception. */
+.tab:focus-visible { outline-offset: -3px; }
+.tab .tab-stage { font-size: 0.75rem; }
+/* The panels take the workspace's remaining height; the one that is
+   shown fills it. A product panel is as tall as the window allows (UX
+   §6 Tabs, §10), and a panel that holds flowing content — Overview,
+   Evidence, an Open card — scrolls as a page inside its column: the
+   shell's main never scrolls, so a scoreboard and journal taller than
+   the workspace were clipped and unreachable when only Overview could.
+*/
+.panels { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface); }
+.panel { flex: 1; min-height: 0; min-width: 0; overflow: auto; }
+.panel[hidden] { display: none; }
+/* The panels are the sheet the product sits on; a flowing panel is
+   padded like a page, and a product's frame runs edge to edge inside
+   it, square and borderless — the sheet is its boundary (treatment
+   0006 §5). */
+.panel-overview, .panel-evidence { padding: 1.25rem 1.5rem; }
+.panel-iframe, .panel-newtab { display: flex; flex-direction: column; }
+iframe.product { flex: 1; min-height: 0; display: block; width: 100%; height: 100%; border: none; border-radius: var(--radius-record); background: var(--bg); }
+.open-card { border: none; border-top: 2px solid var(--ink); border-radius: var(--radius-record); padding: 2rem; text-align: center; }
+.open-card h3 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+
+/* playbook rail — step anatomy top to bottom (UX §6) */
+/* The rail's column scrolls on its own, and a scroll container clips
+   what leaves it — including a focus ring. The ring is 7 px outside its
+   control (3 px at a 4 px offset, UX §9), so the inset is 8 px: at
+   4 px a keyboard user saw the ring on the chooser's own actions cut
+   off at the column's edge. */
+.rail-region { min-height: 0; overflow-y: auto; padding: 0.5rem 0.5rem 1rem; scroll-padding-block: 0.5rem; }
+.rail-head { padding-bottom: 0.5rem; }
+.rail-title { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.5rem; margin: 0.25rem 0 0; }
+.rail-sub { margin: 0.25rem 0 1rem; font-size: 0.75rem; }
+/* The rail is a numbered procedure, which is what it is (treatment
+   0006 §3): each step is a record under a rule, with a two-digit index
+   in the 2.75 rem gutter. The numeral is the list's own counter — the
+   kit's mechanism, and no template field to keep in step with the
+   order. The current step inverts its index tile; it no longer wears a
+   coloured border, because chromatic colour is status and "where you
+   are" is not a verdict. */
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: steps; display: flex; flex-direction: column; }
+.step {
+  counter-increment: steps;
+  display: grid; grid-template-columns: 2.75rem minmax(0, 1fr); column-gap: 1.25rem;
+  border: none; border-top: 1px solid var(--border); border-radius: var(--radius-record);
+  padding: 1.5rem 0;
+}
+.step > * { grid-column: 2; }
+/* The index sits on the eyebrow's line, which is where the treatment's
+   sketch puts it: a short box, so the numeral is beside the words that
+   name the step rather than floating half a record below them. The
+   current step's tile is the full 2.75 rem ink square, and its numeral
+   centres in it. */
+.step::before {
+  content: counter(steps, decimal-leading-zero);
+  grid-column: 1; grid-row: 1; align-self: start;
+  display: grid; place-items: center; width: 2.75rem; height: 1.25rem;
+  font: 500 0.85rem/1 var(--mono); color: var(--muted);
+}
+.step.current::before { height: 2.75rem; background: var(--ink); color: var(--bg); }
+.step-position { margin: 0; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
+/* Advisory pacing, presenter-visible only (spec 0001 line 80). Quiet:
+   it is guidance for the person running the room, not a clock the
+   audience or a learner is measured against. */
+.pacing { font-variant-numeric: tabular-nums; }
+.step-title { font-family: var(--display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.25rem; margin: 0.35rem 0 0.5rem; }
+/* The rail's narrative reads at 18 px (D6), which is also the projector
+   floor UX §4 asks of Presenter. The measure is the column; 68ch is the
+   outer bound it never reaches at rail width. */
+.step-body { max-width: 68ch; font-size: 1.125rem; line-height: 1.65; }
+/* The kit's note: a 3 px ink rule on the sheet (treatment 0006 §5). */
+.notes { margin-top: 0.75rem; padding: 0.5rem 0.75rem; border-left: 3px solid var(--ink); background: var(--surface); color: var(--muted); font-size: 0.9375rem; }
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.solution { margin-top: 0.75rem; font-size: 0.875rem; }
+.solution summary { cursor: pointer; color: var(--muted); }
+/* The pointer's way through the rail: the keyboard's [ and ] with faces
+   on. A step card is selectable by clicking it, so it says so. */
+.step { cursor: pointer; }
+.step .step-body, .step .notes, .step .solution, .step .result, .step .hint { cursor: auto; }
+.step-nav-bar { display: flex; gap: 0.5rem; margin-top: 1rem; }
+.step-nav { flex: 1; }
+
+/* verify + its result line: colour, glyph and word together, always */
+.verify { margin-top: 0.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.verify-button[disabled] { opacity: 0.7; cursor: progress; }
+.result { margin: 0; font-size: 0.875rem; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.375rem; }
+.result .receipt { color: var(--muted); }
+.result.status-pass .glyph, .result.status-pass .word { color: var(--status-ready); }
+.result.status-fail .glyph, .result.status-fail .word { color: var(--status-fail); }
+.result.status-error .glyph, .result.status-error .word { color: var(--status-warn); }
+.result.status-attested .glyph, .result.status-attested .word { color: var(--status-attest); }
+.result.status-idle .glyph, .result.status-idle .word { color: var(--status-pending); }
+/* The kit's `note.warning`: a rule, not a box (treatment 0006 §5). */
+.hint {
+  margin: 0.5rem 0 0; padding: 0.5rem 0.75rem; font-size: 0.9375rem;
+  border: none; border-left: 3px solid var(--status-warn); border-radius: var(--radius-record);
+  background: var(--surface); color: var(--ink);
+}
+/* Presenter: a 10px light beside the title, no chrome, no motion (UX §6) */
+.rail[data-presenter="true"] .light { font-size: 10px; vertical-align: middle; }
+.light-ready { color: var(--status-ready); }
+.light-warn { color: var(--status-warn); }
+.light-attest { color: var(--status-attest); }
+.light-pending { color: var(--status-pending); }
+.verify-quiet { margin: 0; font-size: 0.75rem; }
+
+/* evidence scoreboard */
+.chips { display: flex; align-items: center; gap: 0.375rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.chips .spacer { flex: 1; }
+/* The kit's filter bar: outlined 4 px buttons, the pressed one solid
+   ink (treatment 0006 §5). */
+.chip {
+  font-family: var(--mono); font-size: 0.75rem; padding: 0.25rem 0.6rem;
+  border: 1px solid var(--border); border-radius: var(--radius-control); color: var(--muted);
+}
+a.chip:hover { text-decoration: none; border-color: var(--ink); color: var(--ink); }
+a.chip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 500; }
+.scoreboard { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.scoreboard th, .scoreboard td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+.scoreboard thead th { border-bottom: 2px solid var(--ink); }
+.scoreboard .expectation { color: var(--muted); }
+.scoreboard tr.status-ready .glyph, .scoreboard tr.status-ready .word { color: var(--status-ready); }
+.scoreboard tr.status-fail .glyph, .scoreboard tr.status-fail .word { color: var(--status-fail); }
+.scoreboard tr.status-warn .glyph, .scoreboard tr.status-warn .word { color: var(--status-warn); }
+.scoreboard tr.status-attest .glyph, .scoreboard tr.status-attest .word { color: var(--status-attest); }
+.scoreboard tr.status-pending .glyph, .scoreboard tr.status-pending .word { color: var(--status-pending); }
+.journal { list-style: none; margin: 0.5rem 0 0; padding: 0; font-size: 0.75rem; color: var(--ink); }
+.journal li { padding: 0.25rem 0; border-bottom: 1px solid var(--border); }
+.journal .kind { color: var(--muted); }
+.section { margin: 1.75rem 0 0.75rem; }
+.empty { color: var(--muted); }
+
+/* credentials — masked until asked for, and no reveal-all (UX §6) */
+.secrets table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.secrets th, .secrets td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid var(--border); }
+.secrets thead th { border-bottom: 2px solid var(--ink); }
+.secrets .masked { letter-spacing: 0.125em; color: var(--muted); }
+.revealed { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.revealed .value { padding: 0.125rem 0.375rem; border: 1px solid var(--border); border-radius: var(--radius-control); }
+.countdown { font-size: 0.75rem; }
+.note { font-size: 0.75rem; margin-top: 0.5rem; }
+/* The credentials footnote is one of the two notes treatment 0006 §5
+   names — the other is the presenter's — so it takes the same 3 px ink
+   rule on the sheet. Scoped to the credentials: the reset dialog's own
+   `.note` lines are its running commentary, not a note.
+*/
+.secrets .note { padding: 0.5rem 0.75rem; border-left: 3px solid var(--ink); background: var(--surface); }
+
+/* reset dialog — two columns, then one confirm; never red-styled bait */
+.two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0.75rem 0 1rem; }
+.two-column .col { border: none; border-top: 2px solid var(--ink); border-radius: var(--radius-record); padding: 0.75rem 0; }
+.two-column h3 { margin: 0 0 0.5rem; }
+.two-column ul { margin: 0; padding-left: 1.125rem; font-size: 0.875rem; color: var(--muted); }
+
+/* keyboard map */
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; font-size: 0.875rem; }
+.keys dt { font-weight: 500; }
+.keys dd { margin: 0; color: var(--muted); }
+
+/* playbook list (the rail before one is opened) */
+.playbooks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.playbooks { gap: 0; }
+.playbook { border: none; border-top: 1px solid var(--border); border-radius: var(--radius-record); padding: 1rem 0; }
+.playbook h3 { margin: 0 0 0.25rem; font-size: 1.125rem; }
+.keymap { border: none; border-top: 2px solid var(--ink); border-radius: var(--radius-record); padding: 1rem 0 0; margin-top: 1.5rem; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0; font-size: 0.875rem; }
+.keys dt { color: var(--muted); }
+.keys dd { margin: 0; }
+.action-output:empty { display: none; }
+
+/* `r` toggles the rail (UX §9), and it has to toggle it where the rail
+   is actually used: this rule lived inside the narrow-viewport block, so
+   pressing `r` on a desktop or a projector — the primary layout, and the
+   one a presenter is standing in front of — moved the attribute and
+   nothing else.
+   What it toggles to is the spine UX §6 specifies — "a slim progress
+   spine (seven-ish dots) with the current step title" — and not
+   `display: none`, which is an absent rail rather than a collapsed one
+   (round 18). The chooser has no spine and no position to keep, so a
+   closed rail that has not opened a playbook does go away. */
+.lab[data-rail="closed"] { grid-template-columns: 3.5rem minmax(0, 1fr); }
+.lab[data-rail="closed"] #rail > :not(.rail) { display: none; }
+.lab[data-rail="closed"] .rail > :not(.rail-spine) { display: none; }
+.rail-spine { display: none; }
+.lab[data-rail="closed"] .rail-spine {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+  width: 100%; padding: 0.75rem 0.25rem; font: inherit; color: var(--ink);
+  background: none; border: 1px solid var(--border); border-radius: var(--radius-control); cursor: pointer;
+}
+/* Readable to a screen reader, invisible to everyone else: the spine's
+   dots carry a word each (UX §4's pairing), and 3.5rem has no room to
+   print it. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.spine-dots { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.6875rem; line-height: 1; }
+.spine-dot { position: relative; }
+.spine-dot { color: var(--status-pending); }
+.spine-dot.status-pass { color: var(--status-ready); }
+.spine-dot.status-fail { color: var(--status-fail); }
+.spine-dot.status-attested { color: var(--status-attest); }
+.spine-dot.status-error { color: var(--status-warn); }
+.spine-dot.status-running { color: var(--status-progress); }
+.spine-dot.current { text-shadow: 0 0 0 currentColor; outline: 1px solid currentColor; outline-offset: 1px; border-radius: 50%; }
+/* The drawer's own control, outside the region's swappable content: the
+   chooser and the reset dialog replace what is inside `#rail`, and a
+   close button rendered in the playbook rail went with them — leaving a
+   touch-only user inside a fixed drawer with nothing to press.
+   It says which way it goes, in text, so its
+   accessible name changes with it. */
+.rail-dismiss { float: right; font-size: 0.8125rem; padding: 0.125rem 0.5rem; margin-left: 0.5rem; }
+/* Closed, the column is 3.5 rem — about 40 px of content — and a
+   floated "Show" is wider than that, so the button itself hung outside
+   the scrollport and took its focus ring with it.
+   Closed, it stops floating and takes the column's width. */
+.lab[data-rail="closed"] .rail-dismiss {
+  float: none; display: flex; width: 100%; margin: 0 0 0.5rem;
+  padding: 0.25rem 0; font-size: 0.6875rem;
+}
+.rail-dismiss .when-closed { display: none; }
+.lab[data-rail="closed"] .rail-dismiss .when-open { display: none; }
+.lab[data-rail="closed"] .rail-dismiss .when-closed { display: inline; }
+.spine-title { writing-mode: vertical-rl; font-size: 0.8125rem; color: var(--muted); max-height: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* §10 responsiveness: the rail becomes a drawer, then the page degrades
+   honestly to Overview + rail — a phone is not lied to about iframes. */
+@media (max-width: 1200px) {
+  /* UX §10: "768–1200px: rail overlays as a drawer from the left (same
+     content, `r` toggles)." This put the rail in normal flow under the
+     workspace, which is a stack and not a drawer — on a tablet or a
+     narrow laptop the rail sat below the fold and `r` toggled something
+     the learner had to scroll to find.
+     Closed, it is the same spine §6 specifies, held at the edge where
+     it is the way back: one behaviour at every width. The edge is the
+     left one since S11, where the rail lives. */
+  .lab { grid-template-columns: minmax(0, 1fr); padding-left: 4.5rem; }
+  .lab[data-rail="closed"] { grid-template-columns: minmax(0, 1fr); }
+  .rail-region {
+    position: fixed; top: 3.5rem; left: 0; bottom: 0; z-index: 20;
+    width: min(22rem, 88vw); max-height: none; overflow-y: auto;
+    background: var(--bg); border-top: none; border-right: 1px solid var(--border);
+    padding: 1rem; box-shadow: 4px 0 16px rgb(0 0 0 / 0.12);
+  }
+  .lab[data-rail="closed"] .rail-region {
+    /* 8 px of side inset, not 4: the spine and the Show control are
+       focusable here too, and the ring is 7 px outside them.
+*/
+    width: 3.5rem; padding: 0.75rem 0.5rem; box-shadow: none;
+  }
+}
+@media (max-width: 768px) {
+  /* A tab that cannot show anything is not offered. Hiding the panels
+     and keeping their buttons meant pressing one hid Overview, revealed
+     a panel, and this rule hid that panel too — a blank area where a
+     product should be. */
+  .panel-iframe, .panel-newtab { display: none; }
+  .tabs .tab[data-kind="iframe"], .tabs .tab[data-kind="newtab"] { display: none; }
+  .two-column { grid-template-columns: 1fr; }
+  /* Two columns of metadata leave a phone about 70 px each, which a
+     hostname or a console URL cannot live in.
+     One column, label still above value. */
+  dl.facts, .fact-list { columns: 1; }
+}
+
+/* §4: the ladder's one animation, and §9: not at all under reduced
+   motion — nor in Presenter, which must never move on stage. */
+@media (prefers-reduced-motion: no-preference) {
+  .ladder-rows tr { transition: color 200ms ease; }
+}
+.rail[data-presenter="true"] *, .rail[data-presenter="true"] { transition: none !important; animation: none !important; }
+
+/* A step that applies to the open tab (Manual §7): a quiet mark, not a
+   status — it says "this one is about what you are looking at", which is
+   orientation, not a verdict. It is the boundary weight now, an ink
+   rule rather than a colour, and the step's eyebrow names the tab in
+   words beside its position, which is what a colour could never do. */
+.step.for-tab { border-top: 2px solid var(--ink); }

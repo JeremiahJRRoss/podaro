@@ -1,0 +1,170 @@
+{
+  "plan": {
+    "template": {
+      "name": "grafana-prometheus-intro",
+      "version": "1.0.0",
+      "title": "Grafana \u0026 Prometheus Intro",
+      "path": "../../scenarios/grafana-prometheus-intro"
+    },
+    "profile": {
+      "name": "standard",
+      "description": "4 GB host · all open source"
+    },
+    "services": [
+      {
+        "name": "grafana",
+        "module": "modules/grafana@12.4",
+        "image": {
+          "repository": "docker.io/grafana/grafana",
+          "tag": "12.4.8",
+          "digest": "sha256:7753ad493720e33560077e8bc5e05fbce4ade777f1387b19ab5050b6777111dd"
+        },
+        "endpoints": [
+          {
+            "purpose": "ui",
+            "port": 3000,
+            "scheme": "http"
+          }
+        ],
+        "embed": "iframe",
+        "resources": {
+          "cpu": "500m",
+          "memory": "512MiB"
+        },
+        "readiness": {
+          "typical": "20s",
+          "budget": "1m"
+        },
+        "env": [
+          "GF_AUTH_ANONYMOUS_ENABLED",
+          "GF_AUTH_ANONYMOUS_ORG_ROLE",
+          "GF_SECURITY_ADMIN_PASSWORD",
+          "GF_SECURITY_ALLOW_EMBEDDING"
+        ],
+        "files": [
+          "/etc/grafana/provisioning/datasources/prometheus.yaml"
+        ]
+      },
+      {
+        "name": "prometheus",
+        "module": "modules/prometheus@3.13",
+        "image": {
+          "repository": "docker.io/prom/prometheus",
+          "tag": "v3.13.2",
+          "digest": "sha256:508729e0e2d18e11fd742a5a5ca70e557b940a93948c3c95fd0123a6fd538b69"
+        },
+        "endpoints": [
+          {
+            "purpose": "ui",
+            "port": 9090,
+            "scheme": "http"
+          },
+          {
+            "purpose": "api",
+            "port": 9090,
+            "scheme": "http"
+          }
+        ],
+        "embed": "iframe",
+        "resources": {
+          "cpu": "500m",
+          "memory": "512MiB"
+        },
+        "readiness": {
+          "typical": "15s",
+          "budget": "1m"
+        },
+        "files": [
+          "/etc/prometheus/prometheus.yml"
+        ]
+      }
+    ],
+    "network": {
+      "scope": "instance",
+      "isolated": true,
+      "aliases": [
+        "grafana",
+        "prometheus"
+      ]
+    },
+    "volumes": [],
+    "secrets": [
+      {
+        "name": "grafana",
+        "kind": "password",
+        "declared_by": [
+          "grafana"
+        ]
+      }
+    ],
+    "seeds": [
+      {
+        "name": "query-load",
+        "generator": "http-requests",
+        "kind": "built-in",
+        "count": 200,
+        "params": {
+          "path": "/api/v1/query?query=up",
+          "service": "prometheus"
+        }
+      }
+    ],
+    "checkpoints": {
+      "baseline": [
+        {
+          "id": "prometheus-ready",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "grafana-healthy",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "self-scrape-up",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "template"
+        },
+        {
+          "id": "grafana-scraped",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "template"
+        }
+      ],
+      "objective": [
+        {
+          "id": "traffic-observed",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "playbook first-dashboard · step drive-real-traffic"
+        },
+        {
+          "id": "dashboard-exists",
+          "adapter": "http",
+          "severity": "gate",
+          "source": "playbook first-dashboard · step build-a-dashboard"
+        }
+      ]
+    },
+    "playbooks": [
+      {
+        "name": "first-dashboard",
+        "title": "Your First Verified Dashboard",
+        "steps": 4,
+        "objectives": 2,
+        "modes": [
+          "guided",
+          "presenter"
+        ]
+      }
+    ],
+    "licenses": [],
+    "exec": [],
+    "warnings": []
+  }
+}
