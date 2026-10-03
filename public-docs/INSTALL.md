@@ -3,8 +3,393 @@
 
 **Applies to:** Podaro v0.1.x (MVP) · **Doc version:** 0.1 draft · **License:** AGPL-3.0-only
 
+
 > **How to read this manual.** The terminal output shown is what the installer produces, and every "behind the surface" claim is meant to be true of the code: a difference between the manual and the machine is a bug, in one or the other, and worth a report. It expands User Manual §4; that chapter is the summary, this is the full account.
 
+
+---
+# Podaro Quick Start — Ubuntu/Debian
+
+You’ll need an Ubuntu or Debian server with systemd, at least **4 GB RAM**, sudo access, and network access for downloads. Podaro requires **Podman 4.4 or newer**. Allow **TCP port 7777** from the computer running your browser.
+
+> **DNS requirement:** Your Podaro domain and lab subdomains must resolve to your server’s IP address. Configure a base-domain record and a wildcard DNS record as shown below. For private testing, you can use individual hosts-file entries on your workstation instead.
+
+These instructions build from the source ZIP. The [build script](https://github.com/JeremiahJRRoss/podaro/blob/main/build.sh) supports `--install`, which handles package extraction and launches the installer.
+
+## 1. Download, build, and install
+
+Run these commands on the server as your normal sudo-enabled user, starting in a fresh working directory:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl unzip tar gzip coreutils python3
+
+curl -fL https://github.com/JeremiahJRRoss/podaro/archive/refs/heads/main.zip -o podaro-main.zip
+unzip podaro-main.zip
+cd podaro-main
+
+chmod +x build.sh install.sh hack/release_package.sh
+./build.sh --yes --install
+```
+
+`--yes` lets the build script install a missing or outdated Go toolchain. `--install` creates `/opt/podaro`, extracts the built package, copies `SHA256SUMS`, and runs the installer through sudo.
+
+The installer can install Podman and its rootless helpers through apt when needed.
+
+**Build before installing:** running `install.sh` directly from the source ZIP fails because the compiled binary isn’t there yet.
+
+## 2. Answer the installer prompts
+
+For a private test setup, use:
+
+| Prompt | Answer |
+|---|---|
+| Domain | `lab.example.test` |
+| Gateway port | `7777` |
+| Address for DNS | Your server’s IP address, reachable from your browser |
+| TLS | `local-ca` |
+| Operator username | `podaro-admin`, or your preferred login |
+| Export logs | `no` |
+| Create the starter lab | `yes` |
+| Put `podaroctl` on PATH | `yes` |
+| Install Podman, if asked | `yes` |
+
+Confirm the plan and set your console password when prompted.
+
+The installer creates the dedicated `podaro` Linux account and starts its service. Creating the starter lab also downloads the Grafana and Prometheus images.
+
+## 3. Configure DNS or workstation hosts entries
+
+The domain you entered during installation must resolve to your server from the computer running your browser. The installer prints the required DNS information, but you must configure the records yourself.
+
+### Option A: DNS with a wildcard
+
+For example, if your server is `192.168.1.50`, configure these records in the DNS server your workstation uses:
+
+```text
+lab.example.test      A    192.168.1.50
+*.lab.example.test    A    192.168.1.50
+```
+
+Replace the domain and IP with your own. Use the same domain you entered during installation.
+
+The wildcard covers lab and product hostnames such as:
+
+- `intro.lab.example.test`
+- `grafana-intro.lab.example.test`
+- `prometheus-intro.lab.example.test`
+
+The separate base-domain record covers `lab.example.test`, which the wildcard does not cover.
+
+`lab.example.test` is an example for private testing. For public DNS, use a domain you control and an address reachable by your users.
+
+### Option B: Workstation hosts file
+
+For private testing without configuring DNS, add this line to the hosts file on the computer running your browser. Replace `192.168.1.50` with your server’s actual IP:
+
+```text
+192.168.1.50 lab.example.test intro.lab.example.test grafana-intro.lab.example.test prometheus-intro.lab.example.test
+```
+
+| Operating system | Hosts file |
+|---|---|
+| Linux/macOS | `/etc/hosts` |
+| Windows | `C:\Windows\System32\drivers\etc\hosts` |
+
+Edit the file with administrator privileges.
+
+**Hosts files do not support wildcards.** Include all four names so the console and application tabs work, and add entries for any additional labs you create.
+
+For a separate server, make these changes on your workstation. The [Podaro manual](https://github.com/JeremiahJRRoss/podaro/blob/main/public-docs/USERMANUAL.md#5-networking-and-dns) warns against adding the lab names to the server’s own hosts file.
+
+## 4. Download and trust the CA certificate
+
+On the server, make the public CA certificate available to copy:
+
+```bash
+sudo install -m 0644 \
+  /opt/podaro/.local/state/podaro/ca/ca.crt \
+  /tmp/podaro-ca.crt
+```
+
+On your browser’s computer, download it using your normal SSH account. Replace `youruser` and `SERVER_IP`:
+
+```bash
+scp youruser@SERVER_IP:/tmp/podaro-ca.crt .
+```
+
+Import `podaro-ca.crt` into the browser you’ll use:
+
+| Browser | How to trust the CA |
+|---|---|
+| Chrome | Open `chrome://certificate-manager` and add the file as a trusted certificate. |
+| Firefox | Open Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import. Select the file and enable trust for identifying websites. |
+
+Restart your browser after importing.
+
+**Copy only the public `.crt` file; keep `ca.key` on the server.**
+
+Browser documentation: [Chrome certificate management](https://chromium.googlesource.com/chromium/src/+/main/net/data/ssl/chrome_root_store/faq.md) · [Firefox certificate trust](https://wiki.mozilla.org/CA/Changing_Trust_Settings)
+
+## 5. Open your first lab
+
+Check the lab from your normal server shell:
+
+```bash
+sudo podaroctl status intro
+```
+
+If you chose **no** when asked to create the starter lab, create it now:
+
+```bash
+sudo podaroctl up grafana-prometheus-intro --name intro
+```
+
+Once ready, open:
+
+**[https://intro.lab.example.test:7777](https://intro.lab.example.test:7777)**
+
+If you used a different domain or port, use the console URL printed by Podaro.
+
+Sign in with the operator username and password you created, then follow **Start here**.
+
+Baseline checks should pass. Incomplete objective checks are expected until you do the exercises.
+
+## Troubleshooting
+
+Run:
+
+```bash
+sudo podaroctl doctor
+```
+
+| Symptom | Check |
+|---|---|
+| Hostname error | Confirm DNS or workstation hosts entries resolve the requested hostname to your server’s IP. |
+| Base domain works but lab hostnames fail | Check the wildcard DNS record, or add each lab hostname to your workstation’s hosts file. |
+| Certificate warning | Confirm you imported and trusted the Podaro CA in the browser you’re using. |
+| Connection timeout | Check the server address, service, and firewall access to TCP port 7777. |
+| Console opens but application tabs fail | Confirm the Grafana and Prometheus hostnames also resolve to the server. |
+| `sudo: podaroctl: command not found` | Use `sudo /opt/podaro/podaroctl doctor` and the same full path for other commands. |
+
+---
+
+# Podaro Quick Start — CentOS Stream 10
+
+You’ll need a CentOS Stream 10 server with systemd, at least **4 GB RAM**, sudo access, and network access for downloads. Podaro requires **Podman 4.4 or newer**. Allow **TCP port 7777** from the computer running your browser.
+
+> **DNS requirement:** Your Podaro domain and lab subdomains must resolve to your server’s IP address. Configure a base-domain record and a wildcard DNS record as shown below. For private testing, you can use individual hosts-file entries on your workstation instead.
+
+These instructions build from the source ZIP. The [build script](https://github.com/JeremiahJRRoss/podaro/blob/main/build.sh) supports `--install`, which handles package extraction and launches the installer.
+
+**CentOS prerequisite:** Install Podman before running the installer. The installer’s automatic Podman installation currently uses apt, so it cannot perform that step on CentOS.
+
+## 1. Install prerequisites, then download and build
+
+Run these commands on the server as your normal sudo-enabled user:
+
+```bash
+sudo dnf install -y \
+  ca-certificates unzip tar gzip coreutils python3 \
+  podman shadow-utils passt fuse-overlayfs \
+  dbus-broker iproute hostname procps-ng util-linux firewalld
+
+command -v curl >/dev/null || sudo dnf install -y curl
+```
+
+The conditional command keeps an existing `curl` installation, including `curl-minimal`, and installs curl if it is missing.
+
+Check that Podman and the user-namespace helpers are available:
+
+```bash
+podman --version
+command -v newuidmap newgidmap
+```
+
+Podman must be version **4.4 or newer**, and both helper commands must be found before continuing.
+
+From a fresh working directory, download and build Podaro:
+
+```bash
+curl -fL https://github.com/JeremiahJRRoss/podaro/archive/refs/heads/main.zip -o podaro-main.zip
+unzip podaro-main.zip
+cd podaro-main
+
+chmod +x build.sh install.sh hack/release_package.sh
+./build.sh --yes --install
+```
+
+`--yes` lets the build script install a missing or outdated Go toolchain. On CentOS, its fallback downloads and checksum-verifies the official Go archive and installs it under `/usr/local/go`.
+
+`--install` creates `/opt/podaro`, extracts the built package, copies `SHA256SUMS`, and runs the installer through sudo.
+
+**Build before installing:** running `install.sh` directly from the source ZIP fails because the compiled binary isn’t there yet.
+
+## 2. Answer the installer prompts
+
+For a private test setup, use:
+
+| Prompt | Answer |
+|---|---|
+| Domain | `lab.example.test` |
+| Gateway port | `7777` |
+| Address for DNS | Your server’s IP address, reachable from your browser |
+| TLS | `local-ca` |
+| Operator username | `podaro-admin`, or your preferred login |
+| Export logs | `no` |
+| Create the starter lab | `yes` |
+| Put `podaroctl` on PATH | `yes` |
+
+Podman should already be detected from the prerequisite installation.
+
+Confirm the plan and set your console password when prompted.
+
+The installer creates the dedicated `podaro` Linux account, configures subordinate user/group IDs and lingering, and starts its user service. Creating the starter lab also downloads the Grafana and Prometheus images.
+
+## 3. Allow the gateway through firewalld
+
+On a standard test server using firewalld, start it and inspect the active zones:
+
+```bash
+sudo systemctl enable --now firewalld
+sudo firewall-cmd --get-active-zones
+```
+
+Open TCP port 7777 in the zone used by the server’s network interface. The following example uses `public`; replace it if your interface uses another zone:
+
+```bash
+sudo firewall-cmd --zone=public --add-port=7777/tcp
+sudo firewall-cmd --permanent --zone=public --add-port=7777/tcp
+sudo firewall-cmd --zone=public --query-port=7777/tcp
+```
+
+The first command applies the rule immediately. The second preserves it across restarts. The final command should print `yes`.
+
+If you selected another gateway port, use that port instead.
+
+If the server is behind a cloud firewall, security group, or router, allow the same TCP port there from your browser’s network.
+
+## 4. Configure DNS or workstation hosts entries
+
+The domain you entered during installation must resolve to your server from the computer running your browser. The installer prints the required DNS information, but you must configure the records yourself.
+
+### Option A: DNS with a wildcard
+
+For example, if your server is `192.168.1.50`, configure these records in the DNS server your workstation uses:
+
+```text
+lab.example.test      A    192.168.1.50
+*.lab.example.test    A    192.168.1.50
+```
+
+Replace the domain and IP with your own. Use the same domain you entered during installation.
+
+The wildcard covers lab and product hostnames such as:
+
+- `intro.lab.example.test`
+- `grafana-intro.lab.example.test`
+- `prometheus-intro.lab.example.test`
+
+The separate base-domain record covers `lab.example.test`, which the wildcard does not cover.
+
+`lab.example.test` is an example for private testing. For public DNS, use a domain you control and an address reachable by your users.
+
+### Option B: Workstation hosts file
+
+For private testing without configuring DNS, add this line to the hosts file on the computer running your browser. Replace `192.168.1.50` with your server’s actual IP:
+
+```text
+192.168.1.50 lab.example.test intro.lab.example.test grafana-intro.lab.example.test prometheus-intro.lab.example.test
+```
+
+| Operating system | Hosts file |
+|---|---|
+| Linux/macOS | `/etc/hosts` |
+| Windows | `C:\Windows\System32\drivers\etc\hosts` |
+
+Edit the file with administrator privileges.
+
+**Hosts files do not support wildcards.** Include all four names so the console and application tabs work, and add entries for any additional labs you create.
+
+For a separate server, make these changes on your workstation. The [Podaro manual](https://github.com/JeremiahJRRoss/podaro/blob/main/public-docs/USERMANUAL.md#5-networking-and-dns) warns against adding the lab names to the server’s own hosts file.
+
+## 5. Download and trust the CA certificate
+
+On the server, make the public CA certificate available to copy:
+
+```bash
+sudo install -m 0644 \
+  /opt/podaro/.local/state/podaro/ca/ca.crt \
+  /tmp/podaro-ca.crt
+```
+
+On your browser’s computer, download it using your normal SSH account. Replace `youruser` and `SERVER_IP`:
+
+```bash
+scp youruser@SERVER_IP:/tmp/podaro-ca.crt .
+```
+
+Import `podaro-ca.crt` into the browser you’ll use:
+
+| Browser | How to trust the CA |
+|---|---|
+| Chrome | Open `chrome://certificate-manager` and add the file as a trusted certificate. |
+| Firefox | Open Settings → Privacy & Security → Certificates → View Certificates → Authorities → Import. Select the file and enable trust for identifying websites. |
+
+Restart your browser after importing.
+
+Trust the certificate on the computer running your browser. Installing it only on the CentOS server does not establish trust in a browser on another computer.
+
+**Copy only the public `.crt` file; keep `ca.key` on the server.**
+
+Browser documentation: [Chrome certificate management](https://chromium.googlesource.com/chromium/src/+/main/net/data/ssl/chrome_root_store/faq.md) · [Firefox certificate trust](https://wiki.mozilla.org/CA/Changing_Trust_Settings)
+
+## 6. Open your first lab
+
+Check the lab from your normal server shell:
+
+```bash
+sudo /opt/podaro/podaroctl status intro
+```
+
+These commands use the wrapper’s full path so they work even when sudo’s PATH excludes `/usr/local/bin`.
+
+If you chose **no** when asked to create the starter lab, create it now:
+
+```bash
+sudo /opt/podaro/podaroctl up grafana-prometheus-intro --name intro
+```
+
+Once ready, open:
+
+**[https://intro.lab.example.test:7777](https://intro.lab.example.test:7777)**
+
+If you used a different domain or port, use the console URL printed by Podaro.
+
+Sign in with the operator username and password you created, then follow **Start here**.
+
+Baseline checks should pass. Incomplete objective checks are expected until you do the exercises.
+
+## Troubleshooting
+
+Run:
+
+```bash
+sudo /opt/podaro/podaroctl doctor
+sudo /opt/podaro/podaroctl system status
+```
+
+| Symptom | Check |
+|---|---|
+| Installer says the host is not an apt system | Complete the DNF prerequisite step and confirm `podman` and `newuidmap` are available. |
+| Hostname error | Confirm DNS or workstation hosts entries resolve the requested hostname to your server’s IP. |
+| Base domain works but lab hostnames fail | Check the wildcard DNS record, or add each lab hostname to your workstation’s hosts file. |
+| Certificate warning | Confirm you imported and trusted the Podaro CA in the browser you’re using. |
+| Connection timeout | Check the server address, service, firewalld zone, and any external firewall rules for TCP port 7777. |
+| Console opens but application tabs fail | Confirm the Grafana and Prometheus hostnames also resolve to the server. |
+| `sudo: podaroctl: command not found` | Use the full path: `sudo /opt/podaro/podaroctl`. |
+
+References: [Podaro installation manual](https://github.com/JeremiahJRRoss/podaro/blob/main/public-docs/INSTALL.md) · [Podman installation](https://podman.io/docs/installation) · [firewalld port configuration](https://firewalld.org/documentation/howto/open-a-port-or-service.html)
 ---
 
 ## 1. Before you begin
