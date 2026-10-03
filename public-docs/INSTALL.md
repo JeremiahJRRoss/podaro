@@ -1,13 +1,5 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
-# Podaro Community — Installation Manual
 
-**Applies to:** Podaro v0.1.x (MVP) · **Doc version:** 0.1 draft · **License:** AGPL-3.0-only
-
-
-> **How to read this manual.** The terminal output shown is what the installer produces, and every "behind the surface" claim is meant to be true of the code: a difference between the manual and the machine is a bug, in one or the other, and worth a report. It expands User Manual §4; that chapter is the summary, this is the full account.
-
-
----
 # Podaro Quick Start — Ubuntu/Debian
 
 You’ll need an Ubuntu or Debian server with systemd, at least **4 GB RAM**, sudo access, and network access for downloads. Podaro requires **Podman 4.4 or newer**. Allow **TCP port 7777** from the computer running your browser.
@@ -388,6 +380,19 @@ sudo /opt/podaro/podaroctl system status
 | Connection timeout | Check the server address, service, firewalld zone, and any external firewall rules for TCP port 7777. |
 | Console opens but application tabs fail | Confirm the Grafana and Prometheus hostnames also resolve to the server. |
 | `sudo: podaroctl: command not found` | Use the full path: `sudo /opt/podaro/podaroctl`. |
+
+
+---
+---
+# Podaro Community — Installation Manual
+
+**Applies to:** Podaro v0.1.x (MVP) · **Doc version:** 0.1 draft · **License:** AGPL-3.0-only
+
+
+> **How to read this manual.** The terminal output shown is what the installer produces, and every "behind the surface" claim is meant to be true of the code: a difference between the manual and the machine is a bug, in one or the other, and worth a report. It expands User Manual §4; that chapter is the summary, this is the full account.
+
+
+---
 
 References: [Podaro installation manual](https://github.com/JeremiahJRRoss/podaro/blob/main/public-docs/INSTALL.md) · [Podman installation](https://podman.io/docs/installation) · [firewalld port configuration](https://firewalld.org/documentation/howto/open-a-port-or-service.html)
 ---
